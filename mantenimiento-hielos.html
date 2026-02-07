@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Mantenimiento - Planta de Hielo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: white;
+            color: #1e3c72;
+            border-bottom: 3px solid #1e3c72;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input.alert {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        input.ok {
+            border-color: #28a745;
+            background-color: #f0fff4;
+        }
+
+        .alert-message {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ok-message {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .compressor-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .compressor-section h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .maintenance-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .maintenance-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .maintenance-item h4 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .maintenance-item .frequency {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .photo-upload {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .photo-upload:hover {
+            background: #f8f9fa;
+        }
+
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .photo-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .records-table th {
+            background: #1e3c72;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .records-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .records-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-alert {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .datetime-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-section .row {
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧊 Sistema de Mantenimiento - Planta de Hielo</h1>
+            <p>Control y Registro de Mantenimiento Preventivo</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('reporte')">📊 Reporte Diario</button>
+            <button class="tab" onclick="showTab('mantenimiento')">🔧 Mantenimiento Preventivo</button>
+            <button class="tab" onclick="showTab('historial')">📋 Historial</button>
+        </div>
+
+        <!-- TAB 1: REPORTE DIARIO -->
+        <div id="reporte" class="tab-content active">
+            <h2 style="color: #1e3c72; margin-bottom: 20px;">Reporte de Producción</h2>
+            
+            <div class="datetime-info">
+                <strong>Fecha y Hora Actual:</strong> <span id="currentDateTime"></span>
+            </div>
+
+            <form id="reporteForm">
+                <div class="form-group">
+                    <label>Mantenedor:</label>
+                    <input type="text" id="mantenedor" required>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Temperatura Cuba (°C):</label>
+                        <input type="number" step="0.1" id="temperatura" required>
+                        <div id="tempAlert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Densidad (%):</label>
+                        <input type="number" step="1" id="densidad" required>
+                        <div id="densidadAlert"></div>
+                    </div>
+                </div>
+
+                <div class="compressor-section">
+                    <h3>🔵 Compresor MYCOM</h3>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Descarga (PSI):</label>
+                            <input type="number" id="mycom_descarga" required>
+                            <div id="mycom_descarga_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Succión (PSI):</label>
+                            <input type="number" id="mycom_succion" required>
+                            <div id="mycom_succion_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Amperaje:</label>
+                            <input type="number" id="mycom_amperaje" required>
+                            <div id="mycom_amperaje_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nivel de Aceite:</label>
+                            <select id="mycom_aceite" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="FULL">FULL</option>
+                                <option value="3/4">3/4</option>
+                                <option value="1/2">1/2</option>
+                                <option value="1/4">1/4</option>
+                                <option value="BAJO">BAJO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Capacidad (%):</label>
+                            <input type="number" id="mycom_capacidad" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="compressor-section">
+                    <h3>🟢 Compresor VILTER</h3>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Descarga (PSI):</label>
+                            <input type="number" id="vilter_descarga" required>
+                            <div id="vilter_descarga_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Succión (PSI):</label>
+                            <input type="number" id="vilter_succion" required>
+                            <div id="vilter_succion_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Amperaje:</label>
+                            <input type="number" id="vilter_amperaje" required>
+                            <div id="vilter_amperaje_alert"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nivel de Aceite:</label>
+                            <select id="vilter_aceite" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="FULL">FULL</option>
+                                <option value="3/4">3/4</option>
+                                <option value="1/2">1/2</option>
+                                <option value="1/4">1/4</option>
+                                <option value="BAJO">BAJO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Capacidad (%):</label>
+                            <input type="number" id="vilter_capacidad" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Novedades:</label>
+                    <textarea id="novedades" rows="3" placeholder="Describir cualquier novedad o incidente..."></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Luz:</label>
+                        <input type="text" id="luz" placeholder="Estado del servicio eléctrico">
+                    </div>
+                    <div class="form-group">
+                        <label>Lluvia:</label>
+                        <input type="text" id="lluvia" placeholder="Condiciones climáticas">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Producción:</label>
+                        <input type="text" id="produccion" placeholder="Estado de producción">
+                    </div>
+                    <div class="form-group">
+                        <label>Otros:</label>
+                        <input type="text" id="otros" placeholder="Otros comentarios">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>📸 Fotos del Reporte (Opcional):</label>
+                    <input type="file" id="reporteFotos" multiple accept="image/*" style="display: none;">
+                    <div class="photo-upload" onclick="document.getElementById('reporteFotos').click()">
+                        <p>📷 Haz clic para agregar fotos</p>
+                        <small>Puedes seleccionar múltiples fotos</small>
+                    </div>
+                    <div id="reporteFotosPreview" class="photo-preview"></div>
+                </div>
+
+                <button type="submit" class="btn">💾 Guardar Reporte</button>
+            </form>
+        </div>
+
+        <!-- TAB 2: MANTENIMIENTO PREVENTIVO -->
+        <div id="mantenimiento" class="tab-content">
+            <h2 style="color: #1e3c72; margin-bottom: 20px;">Mantenimiento Preventivo</h2>
+            
+            <div class="filter-section">
+                <label>Filtrar por frecuencia:</label>
+                <select id="frecuenciaFilter" onchange="filterMaintenance()">
+                    <option value="todos">Todos</option>
+                    <option value="2 veces al dia">2 veces al día</option>
+                    <option value="Diario">Diario</option>
+                    <option value="Semanal">Semanal</option>
+                    <option value="Quincenal">Quincenal</option>
+                    <option value="Mensual">Mensual</option>
+                    <option value="Trimestral">Trimestral</option>
+                    <option value="Anual">Anual</option>
+                </select>
+            </div>
+
+            <div id="maintenanceList"></div>
+
+            <button onclick="saveMaintenanceLog()" class="btn btn-secondary">✅ Guardar Actividades Realizadas</button>
+        </div>
+
+        <!-- TAB 3: HISTORIAL -->
+        <div id="historial" class="tab-content">
+            <h2 style="color: #1e3c72; margin-bottom: 20px;">Historial de Reportes</h2>
+            
+            <div class="filter-section">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Desde:</label>
+                        <input type="date" id="filterFechaDesde">
+                    </div>
+                    <div class="form-group">
+                        <label>Hasta:</label>
+                        <input type="date" id="filterFechaHasta">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo:</label>
+                        <select id="filterTipo">
+                            <option value="todos">Todos</option>
+                            <option value="reporte">Reportes Diarios</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="filterHistory()" class="btn" style="margin-top: 10px;">🔍 Filtrar</button>
+                <button onclick="exportToExcel()" class="btn btn-secondary" style="margin-top: 10px;">📥 Exportar a Excel</button>
+            </div>
+
+            <div id="historialContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos local (localStorage)
+        let reportes = JSON.parse(localStorage.getItem('reportes')) || [];
+        let maintenanceLogs = JSON.parse(localStorage.getItem('maintenanceLogs')) || [];
+
+        // Rangos de valores aceptables
+        const rangos = {
+            temperatura: { min: -15, max: -12 },
+            densidad: { min: 70, max: 80 },
+            mycom: {
+                descarga: { min: 180, max: 220 },
+                succion: { min: 8, max: 18 },
+                amperaje: { min: 60, max: 75 }
+            },
+            vilter: {
+                descarga: { min: 170, max: 200 },
+                succion: { min: 5, max: 15 },
+                amperaje: { min: 45, max: 85 }
+            }
+        };
+
+        // Actividades de mantenimiento según la guía
+        const actividadesMantenimiento = [
+            { id: 1, equipo: "COMPRESORES", actividad: "Presión de aceite", frecuencia: "2 veces al dia" },
+            { id: 2, equipo: "COMPRESORES", actividad: "Descarga", frecuencia: "2 veces al dia" },
+            { id: 3, equipo: "COMPRESORES", actividad: "Succión", frecuencia: "2 veces al dia" },
+            { id: 4, equipo: "COMPRESORES", actividad: "Visor de aceite", frecuencia: "2 veces al dia" },
+            { id: 5, equipo: "COMPRESORES", actividad: "Correas", frecuencia: "2 veces al dia" },
+            { id: 6, equipo: "COMPRESORES", actividad: "Ruidos en el compresor", frecuencia: "2 veces al dia" },
+            { id: 7, equipo: "COMPRESORES", actividad: "Fugas de amoniaco", frecuencia: "2 veces al dia" },
+            { id: 8, equipo: "COMPRESORES", actividad: "Amperajes del motor", frecuencia: "Semanal" },
+            { id: 9, equipo: "COMPRESORES", actividad: "Rodamientos y poleas", frecuencia: "2 veces al dia" },
+            { id: 10, equipo: "COMPRESORES", actividad: "Recalentamiento de tapas cabezales", frecuencia: "2 veces al dia" },
+            { id: 11, equipo: "COMPRESORES", actividad: "Limpieza", frecuencia: "2 veces al dia" },
+            { id: 12, equipo: "AGITADORES", actividad: "Correas", frecuencia: "2 veces al dia" },
+            { id: 13, equipo: "AGITADORES", actividad: "Amperajes del motor", frecuencia: "Semanal" },
+            { id: 14, equipo: "AGITADORES", actividad: "Poleas alineadas", frecuencia: "2 veces al dia" },
+            { id: 15, equipo: "AGITADORES", actividad: "Chumaceras", frecuencia: "2 veces al dia" },
+            { id: 16, equipo: "AGITADORES", actividad: "Grasa Chumaceras", frecuencia: "Semanal" },
+            { id: 17, equipo: "AGITADORES", actividad: "Estructuras metálica 'Soldadura'", frecuencia: "2 veces al dia" },
+            { id: 18, equipo: "AGITADORES", actividad: "Limpieza", frecuencia: "2 veces al dia" },
+            { id: 19, equipo: "PUENTE GRUA", actividad: "Amperaje", frecuencia: "Semanal" },
+            { id: 20, equipo: "PUENTE GRUA", actividad: "Grasa en las cadenas", frecuencia: "Semanal" },
+            { id: 21, equipo: "PUENTE GRUA", actividad: "Botonera", frecuencia: "Semanal" },
+            { id: 22, equipo: "CONDENSADOR", actividad: "Motor", frecuencia: "Semanal" },
+            { id: 23, equipo: "CONDENSADOR", actividad: "Bomba", frecuencia: "Semanal" },
+            { id: 24, equipo: "CONDENSADOR", actividad: "Amperaje", frecuencia: "Semanal" },
+            { id: 25, equipo: "CONDENSADOR", actividad: "Chumaceras", frecuencia: "Semanal" },
+            { id: 26, equipo: "CONDENSADOR", actividad: "Grasa Chumaceras", frecuencia: "Quincenal" },
+            { id: 27, equipo: "CONDENSADOR", actividad: "Correas", frecuencia: "Semanal" },
+            { id: 28, equipo: "CONDENSADOR", actividad: "Roceadores", frecuencia: "Semanal" },
+            { id: 29, equipo: "CONDENSADOR", actividad: "Atrapagotas", frecuencia: "Semanal" },
+            { id: 30, equipo: "CONDENSADOR", actividad: "Glower", frecuencia: "Semanal" },
+            { id: 31, equipo: "CONDENSADOR", actividad: "Fugas de agua", frecuencia: "Semanal" },
+            { id: 32, equipo: "CUBA", actividad: "Nivel de agua", frecuencia: "2 veces al dia" },
+            { id: 33, equipo: "CUBA", actividad: "Densidad", frecuencia: "2 veces al dia" },
+            { id: 34, equipo: "CUBA", actividad: "Tablas rotas", frecuencia: "Semanal" },
+            { id: 35, equipo: "CUBA", actividad: "Lona en buen estado", frecuencia: "Semanal" },
+            { id: 36, equipo: "CUBA", actividad: "Potes rotos", frecuencia: "Diario" },
+            { id: 37, equipo: "CUBA", actividad: "Limpieza general", frecuencia: "Diario" },
+            { id: 38, equipo: "CALDERINES", actividad: "Manómetro de succión", frecuencia: "2 veces al dia" },
+            { id: 39, equipo: "CALDERINES", actividad: "Válvula de expansión", frecuencia: "2 veces al dia" },
+            { id: 40, equipo: "CALDERINES", actividad: "Electroválvula (Activación/Desactiv)", frecuencia: "2 veces al dia" },
+            { id: 41, equipo: "CALDERINES", actividad: "Válvula de seguridad", frecuencia: "2 veces al dia" },
+            { id: 42, equipo: "CALDERINES", actividad: "Estructura metálica (Limpieza alrededor)", frecuencia: "2 veces al dia" },
+            { id: 43, equipo: "TRAMPAS DE LIQUIDOS", actividad: "Retorno de líquidos (válvulas abiertas)", frecuencia: "2 veces al dia" },
+            { id: 44, equipo: "TRAMPAS DE LIQUIDOS", actividad: "Limpieza de estructuras", frecuencia: "2 veces al dia" },
+            { id: 45, equipo: "RECIBIDORES DE AMONIACO", actividad: "Visores", frecuencia: "2 veces al dia" },
+            { id: 46, equipo: "RECIBIDORES DE AMONIACO", actividad: "Válvulas abiertas", frecuencia: "2 veces al dia" },
+            { id: 47, equipo: "RECIBIDORES DE AMONIACO", actividad: "Limpieza del área", frecuencia: "2 veces al dia" },
+            { id: 48, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Rocío constante en el tanque", frecuencia: "2 veces al dia" },
+            { id: 49, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Flotador", frecuencia: "2 veces al dia" },
+            { id: 50, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Limpieza del área", frecuencia: "2 veces al dia" },
+            { id: 51, equipo: "MOLINO", actividad: "Amperaje", frecuencia: "Semanal" },
+            { id: 52, equipo: "MOLINO", actividad: "Chumaceras", frecuencia: "Diario" },
+            { id: 53, equipo: "MOLINO", actividad: "Tensión de cadenas", frecuencia: "Diario" },
+            { id: 54, equipo: "MOLINO", actividad: "Pua de Blower", frecuencia: "Diario" },
+            { id: 55, equipo: "MOLINO", actividad: "Buen estado de correas", frecuencia: "Diario" },
+            { id: 56, equipo: "MOLINO", actividad: "Soldadura en general", frecuencia: "Diario" },
+            { id: 57, equipo: "MOLINO", actividad: "Limpieza", frecuencia: "Diario" },
+            { id: 58, equipo: "HIDRONEUMATICO", actividad: "Válvula de tanque abierta", frecuencia: "2 veces al dia" },
+            { id: 59, equipo: "HIDRONEUMATICO", actividad: "Ruidos en el motor", frecuencia: "2 veces al dia" },
+            { id: 60, equipo: "HIDRONEUMATICO", actividad: "Agregar cloro a tanques principales", frecuencia: "Diario" }
+        ];
+
+        // Actualizar fecha y hora actual
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('es-ES', options);
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+
+        // Validación de rangos con alertas
+        function validateRange(inputId, min, max, alertId, unit = '') {
+            const input = document.getElementById(inputId);
+            const alertDiv = document.getElementById(alertId);
+            
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                
+                if (value < min || value > max) {
+                    this.classList.add('alert');
+                    this.classList.remove('ok');
+                    alertDiv.innerHTML = `<div class="alert-message">⚠️ FUERA DE RANGO: Debe estar entre ${min}${unit} y ${max}${unit}</div>`;
+                } else {
+                    this.classList.remove('alert');
+                    this.classList.add('ok');
+                    alertDiv.innerHTML = `<div class="ok-message">✓ Valor dentro del rango normal</div>`;
+                }
+            });
+        }
+
+        // Configurar validaciones
+        validateRange('temperatura', rangos.temperatura.min, rangos.temperatura.max, 'tempAlert', '°C');
+        validateRange('densidad', rangos.densidad.min, rangos.densidad.max, 'densidadAlert', '%');
+        validateRange('mycom_descarga', rangos.mycom.descarga.min, rangos.mycom.descarga.max, 'mycom_descarga_alert', ' PSI');
+        validateRange('mycom_succion', rangos.mycom.succion.min, rangos.mycom.succion.max, 'mycom_succion_alert', ' PSI');
+        validateRange('mycom_amperaje', rangos.mycom.amperaje.min, rangos.mycom.amperaje.max, 'mycom_amperaje_alert', 'A');
+        validateRange('vilter_descarga', rangos.vilter.descarga.min, rangos.vilter.descarga.max, 'vilter_descarga_alert', ' PSI');
+        validateRange('vilter_succion', rangos.vilter.succion.min, rangos.vilter.succion.max, 'vilter_succion_alert', ' PSI');
+        validateRange('vilter_amperaje', rangos.vilter.amperaje.min, rangos.vilter.amperaje.max, 'vilter_amperaje_alert', 'A');
+
+        // Preview de fotos
+        document.getElementById('reporteFotos').addEventListener('change', function(e) {
+            const preview = document.getElementById('reporteFotosPreview');
+            preview.innerHTML = '';
+            
+            for (let file of e.target.files) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Guardar reporte
+        document.getElementById('reporteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const reporte = {
+                id: Date.now(),
+                tipo: 'reporte',
+                fecha: new Date().toISOString(),
+                mantenedor: document.getElementById('mantenedor').value,
+                temperatura: parseFloat(document.getElementById('temperatura').value),
+                densidad: parseFloat(document.getElementById('densidad').value),
+                mycom: {
+                    descarga: parseFloat(document.getElementById('mycom_descarga').value),
+                    succion: parseFloat(document.getElementById('mycom_succion').value),
+                    amperaje: parseFloat(document.getElementById('mycom_amperaje').value),
+                    aceite: document.getElementById('mycom_aceite').value,
+                    capacidad: parseFloat(document.getElementById('mycom_capacidad').value)
+                },
+                vilter: {
+                    descarga: parseFloat(document.getElementById('vilter_descarga').value),
+                    succion: parseFloat(document.getElementById('vilter_succion').value),
+                    amperaje: parseFloat(document.getElementById('vilter_amperaje').value),
+                    aceite: document.getElementById('vilter_aceite').value,
+                    capacidad: parseFloat(document.getElementById('vilter_capacidad').value)
+                },
+                novedades: document.getElementById('novedades').value,
+                luz: document.getElementById('luz').value,
+                lluvia: document.getElementById('lluvia').value,
+                produccion: document.getElementById('produccion').value,
+                otros: document.getElementById('otros').value
+            };
+            
+            reportes.push(reporte);
+            localStorage.setItem('reportes', JSON.stringify(reportes));
+            
+            alert('✅ Reporte guardado exitosamente!');
+            this.reset();
+            location.reload();
+        });
+
+        // Renderizar actividades de mantenimiento
+        function renderMaintenanceActivities(filter = 'todos') {
+            const container = document.getElementById('maintenanceList');
+            container.innerHTML = '';
+            
+            const filtered = filter === 'todos' 
+                ? actividadesMantenimiento 
+                : actividadesMantenimiento.filter(a => a.frecuencia === filter);
+            
+            let currentEquipo = '';
+            
+            filtered.forEach(actividad => {
+                if (actividad.equipo !== currentEquipo) {
+                    currentEquipo = actividad.equipo;
+                    const header = document.createElement('h3');
+                    header.style.cssText = 'color: #1e3c72; margin-top: 20px; margin-bottom: 15px;';
+                    header.textContent = `🔧 ${currentEquipo}`;
+                    container.appendChild(header);
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'maintenance-item';
+                item.innerHTML = `
+                    <span class="frequency">${actividad.frecuencia}</span>
+                    <h4>${actividad.actividad}</h4>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="act_${actividad.id}">
+                        <label for="act_${actividad.id}">Actividad realizada</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones:</label>
+                        <input type="text" id="obs_${actividad.id}" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label>📸 Foto (Opcional):</label>
+                        <input type="file" id="foto_${actividad.id}" accept="image/*">
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        renderMaintenanceActivities();
+
+        function filterMaintenance() {
+            const filter = document.getElementById('frecuenciaFilter').value;
+            renderMaintenanceActivities(filter);
+        }
+
+        // Guardar log de mantenimiento
+        function saveMaintenanceLog() {
+            const completedActivities = [];
+            
+            actividadesMantenimiento.forEach(actividad => {
+                const checkbox = document.getElementById(`act_${actividad.id}`);
+                if (checkbox && checkbox.checked) {
+                    completedActivities.push({
+                        ...actividad,
+                        observaciones: document.getElementById(`obs_${actividad.id}`).value,
+                        completado: true
+                    });
+                }
+            });
+            
+            if (completedActivities.length === 0) {
+                alert('⚠️ No has marcado ninguna actividad como realizada');
+                return;
+            }
+            
+            const log = {
+                id: Date.now(),
+                tipo: 'mantenimiento',
+                fecha: new Date().toISOString(),
+                actividades: completedActivities
+            };
+            
+            maintenanceLogs.push(log);
+            localStorage.setItem('maintenanceLogs', JSON.stringify(maintenanceLogs));
+            
+            alert(`✅ Se guardaron ${completedActivities.length} actividades de mantenimiento`);
+            renderMaintenanceActivities();
+        }
+
+        // Mostrar historial
+        function showHistory() {
+            const container = document.getElementById('historialContent');
+            const allRecords = [...reportes, ...maintenanceLogs].sort((a, b) => 
+                new Date(b.fecha) - new Date(a.fecha)
+            );
+            
+            if (allRecords.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay registros aún</p>';
+                return;
+            }
+            
+            let html = '<table class="records-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalles</th><th>Estado</th></tr></thead><tbody>';
+            
+            allRecords.forEach(record => {
+                const fecha = new Date(record.fecha).toLocaleString('es-ES');
+                
+                if (record.tipo === 'reporte') {
+                    const alerts = [];
+                    if (record.temperatura < rangos.temperatura.min || record.temperatura > rangos.temperatura.max) alerts.push('Temperatura');
+                    if (record.densidad < rangos.densidad.min || record.densidad > rangos.densidad.max) alerts.push('Densidad');
+                    
+                    const status = alerts.length > 0 
+                        ? `<span class="status-badge status-alert">⚠️ Alertas: ${alerts.join(', ')}</span>`
+                        : `<span class="status-badge status-ok">✓ Normal</span>`;
+                    
+                    html += `
+                        <tr>
+                            <td>${fecha}</td>
+                            <td>📊 Reporte Diario</td>
+                            <td>Temp: ${record.temperatura}°C | Densidad: ${record.densidad}% | ${record.mantenedor}</td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                } else {
+                    html += `
+                        <tr>
+                            <td>${fecha}</td>
+                            <td>🔧 Mantenimiento</td>
+                            <td>${record.actividades.length} actividades completadas</td>
+                            <td><span class="status-badge status-ok">✓ Completado</span></td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function filterHistory() {
+            // Implementar filtrado
+            showHistory();
+        }
+
+        function exportToExcel() {
+            alert('📥 Función de exportación en desarrollo. Los datos se pueden copiar desde la tabla.');
+        }
+
+        // Cambio de tabs
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'historial') {
+                showHistory();
+            }
+        }
+    </script>
+</body>
+</html>
