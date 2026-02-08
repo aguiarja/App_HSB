@@ -1589,38 +1589,36 @@
                     ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
                     ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
                 `;
+            } else if (activity.type === 'nivel_aceite') {
+                // Tipo 'nivel_aceite' - Selector de 4 niveles
+                const oilLevel = activityData.oilLevel || '';
+                const isCompleted = oilLevel !== '';
+                const hasAlert = oilLevel === '1/2' || oilLevel === 'vacio';
+                
+                fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
+                
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel}:</label>
+                    <select id="activity_${activityKey}_oil" 
+                            class="${isCompleted ? 'completed' : 'pending'}"
+                            style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid ${isCompleted ? '#28a745' : '#ffc107'}; font-size: 14px;"
+                            onchange="updateOilLevel(${activity.id}, '${turno || ''}', this.value)">
+                        <option value="">-- Seleccionar nivel --</option>
+                        <option value="full" ${oilLevel === 'full' ? 'selected' : ''}>🟢 Full (Lleno)</option>
+                        <option value="3/4" ${oilLevel === '3/4' ? 'selected' : ''}>🟡 3/4 (Tres cuartos)</option>
+                        <option value="1/2" ${oilLevel === '1/2' ? 'selected' : ''}>🟠 1/2 (Medio)</option>
+                        <option value="vacio" ${oilLevel === 'vacio' ? 'selected' : ''}>🔴 Vacío</option>
+                    </select>
+                    ${hasAlert ? `<div class="alert-message">⚠️ Nivel bajo - Umbral mínimo</div>` : ''}
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>Observaciones:</label>
+                        <input type="text" id="activity_${activityKey}_obs" 
+                               value="${activityData.observations || ''}"
+                               placeholder="Opcional"
+                               onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
+                    </div>
+                `;
             } else {
-                // Tipo 'chequeo' o 'nivel_aceite'
-                if (activity.type === 'nivel_aceite') {
-                    // Campo especial para Nivel de Aceite con 4 niveles
-                    const oilLevel = activityData.oilLevel || '';
-                    const isCompleted = oilLevel !== '';
-                    const hasAlert = oilLevel === '1/2' || oilLevel === 'vacio';
-                    
-                    fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
-                    
-                    fieldDiv.innerHTML = `
-                        <label>${activity.name}${turnoLabel}:</label>
-                        <select id="activity_${activityKey}_oil" 
-                                class="${isCompleted ? 'completed' : 'pending'}"
-                                style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid ${isCompleted ? '#28a745' : '#ffc107'}; font-size: 14px;"
-                                onchange="updateOilLevel(${activity.id}, '${turno || ''}', this.value)">
-                            <option value="">-- Seleccionar nivel --</option>
-                            <option value="full" ${oilLevel === 'full' ? 'selected' : ''}>🟢 Full (Lleno)</option>
-                            <option value="3/4" ${oilLevel === '3/4' ? 'selected' : ''}>🟡 3/4 (Tres cuartos)</option>
-                            <option value="1/2" ${oilLevel === '1/2' ? 'selected' : ''}>🟠 1/2 (Medio)</option>
-                            <option value="vacio" ${oilLevel === 'vacio' ? 'selected' : ''}>🔴 Vacío</option>
-                        </select>
-                        ${hasAlert ? `<div class="alert-message">⚠️ Nivel bajo - Umbral mínimo</div>` : ''}
-                        <div class="form-group" style="margin-top: 10px;">
-                            <label>Observaciones:</label>
-                            <input type="text" id="activity_${activityKey}_obs" 
-                                   value="${activityData.observations || ''}"
-                                   placeholder="Opcional"
-                                   onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
-                        </div>
-                    `;
-                } else {
                     // Chequeo normal (✓ OK)
                     const status = activityData.status || '';
                     const isCompleted = status === 'ok';
@@ -1643,7 +1641,6 @@
                                    onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
                         </div>
                     `;
-                }
             }
             
             container.appendChild(fieldDiv);
@@ -1716,45 +1713,12 @@
             
             showSyncIndicator('💾 Guardando...', 'syncing');
             
-            // ACTUALIZACIÓN INMEDIATA DEL DOM
-            const activity = activities.find(a => a.id === activityId);
-            const inputElement = document.getElementById(`activity_${activityKey}_value`);
-            const fieldDiv = inputElement ? inputElement.closest('.activity-field') : null;
-            
-            if (inputElement && fieldDiv && activity) {
-                // Determinar si el valor está fuera de rango
-                const isOutOfRange = (activity.min !== null && activity.min !== undefined && numValue < activity.min) || 
-                                   (activity.max !== null && activity.max !== undefined && numValue > activity.max);
-                
-                // Actualizar clase del campo
-                if (numValue !== null && !isNaN(numValue)) {
-                    fieldDiv.className = 'activity-field completed';
-                    inputElement.style.border = '2px solid #28a745';
-                } else {
-                    fieldDiv.className = 'activity-field pending';
-                    inputElement.style.border = '2px solid #ffc107';
-                }
-                
-                // Mostrar/ocultar alerta de fuera de rango
-                let alertDiv = fieldDiv.querySelector('.alert-message');
-                
-                if (isOutOfRange && numValue !== null) {
-                    if (!alertDiv) {
-                        alertDiv = document.createElement('div');
-                        alertDiv.className = 'alert-message';
-                        alertDiv.textContent = '⚠️ Valor fuera de rango';
-                        inputElement.insertAdjacentElement('afterend', alertDiv);
-                    }
-                } else {
-                    if (alertDiv) {
-                        alertDiv.remove();
-                    }
-                }
-            }
-            
-            // Re-renderizar secciones para actualizar porcentaje
+            // Re-renderizar tanto secciones como la vista detallada para actualizar colores
             setTimeout(() => {
                 renderSections();
+                if (currentSectionId) {
+                    showSectionDetail(currentSectionId);
+                }
             }, 300);
         }
 
@@ -1770,24 +1734,12 @@
             
             showSyncIndicator('💾 Guardando...', 'syncing');
             
-            // ACTUALIZACIÓN INMEDIATA DEL DOM
-            const checkboxElement = document.getElementById(`activity_${activityKey}_status_${status}`);
-            const fieldDiv = checkboxElement ? checkboxElement.closest('.activity-field') : null;
-            
-            if (checkboxElement && fieldDiv) {
-                // Actualizar clase del campo según estado
-                if (checked) {
-                    fieldDiv.className = 'activity-field completed';
-                    checkboxElement.style.accentColor = '#28a745';
-                } else {
-                    fieldDiv.className = 'activity-field pending';
-                    checkboxElement.style.accentColor = '#ffc107';
-                }
-            }
-            
-            // Re-renderizar secciones para actualizar porcentaje
+            // Re-renderizar tanto secciones como la vista detallada para actualizar colores
             setTimeout(() => {
                 renderSections();
+                if (currentSectionId) {
+                    showSectionDetail(currentSectionId);
+                }
             }, 300);
         }
 
@@ -2133,7 +2085,7 @@
                                     const alertSymbol = isOutOfRange ? '⚠️ ' : '';
                                     const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
                                     
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
+                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                                 } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
                                     // Mostrar no realizada solo en día cerrado
                                     sectionHasData = true;
@@ -2152,92 +2104,67 @@
                                     const alertSymbol = isOutOfRange ? '⚠️ ' : '';
                                     const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
                                     
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
+                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                                 } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
                                     // Mostrar no realizada solo en día cerrado
                                     sectionHasData = true;
                                     sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                 }
                             } else if (activity.type === 'chequeo') {
-                                // Manejo de chequeo normal (OK)
-                                if (dataMorning && dataMorning.status === 'ok') {
-                                    sectionHasData = true;
-                                    const userInfo = dataMorning.user || 'Usuario';
-                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK <small style="color: #666;">(${userInfo} - ${timeInfo})</small></p>`;
-                                }
-                                
-                                if (dataAfternoon && dataAfternoon.status === 'ok') {
-                                    sectionHasData = true;
-                                    const userInfo = dataAfternoon.user || 'Usuario';
-                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK <small style="color: #666;">(${userInfo} - ${timeInfo})</small></p>`;
-                                }
-                                
-                                // Si es día cerrado y no se realizó
-                                if (!isCurrentDay) {
-                                    if (!dataMorning || !dataMorning.status) {
+                                // Verificar si es Nivel de Aceite
+                                if (activity.name.toLowerCase().includes('nivel') && activity.name.toLowerCase().includes('aceite')) {
+                                    // Manejo especial para Nivel de Aceite con 4 niveles
+                                    if (dataMorning && dataMorning.oilLevel) {
+                                        sectionHasData = true;
+                                        const userInfo = dataMorning.user || 'Usuario';
+                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        const oilLevelText = {
+                                            'full': '🟢 Full',
+                                            '3/4': '🟡 3/4',
+                                            '1/2': '🟠 1/2',
+                                            'vacio': '🔴 Vacío'
+                                        }[dataMorning.oilLevel] || dataMorning.oilLevel;
+                                        
+                                        const hasAlert = dataMorning.oilLevel === '1/2' || dataMorning.oilLevel === 'vacio';
+                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
+                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
+                                        
+                                        sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
                                         sectionHasData = true;
                                         sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
                                     }
-                                    if (!dataAfternoon || !dataAfternoon.status) {
+                                    
+                                    if (dataAfternoon && dataAfternoon.oilLevel) {
+                                        sectionHasData = true;
+                                        const userInfo = dataAfternoon.user || 'Usuario';
+                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        const oilLevelText = {
+                                            'full': '🟢 Full',
+                                            '3/4': '🟡 3/4',
+                                            '1/2': '🟠 1/2',
+                                            'vacio': '🔴 Vacío'
+                                        }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
+                                        
+                                        const hasAlert = dataAfternoon.oilLevel === '1/2' || dataAfternoon.oilLevel === 'vacio';
+                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
+                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
+                                        
+                                        sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
                                         sectionHasData = true;
                                         sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                     }
-                                }
-                            } else if (activity.type === 'nivel_aceite') {
-                                // Manejo especial para Nivel de Aceite con 4 niveles
-                                if (dataMorning && dataMorning.oilLevel) {
-                                    sectionHasData = true;
-                                    const userInfo = dataMorning.user || 'Usuario';
-                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    
-                                    const oilLevelText = {
-                                        'full': '🟢 Full',
-                                        '3/4': '🟡 3/4',
-                                        '1/2': '🟠 1/2',
-                                        'vacio': '🔴 Vacío'
-                                    }[dataMorning.oilLevel] || dataMorning.oilLevel;
-                                    
-                                    const hasAlert = dataMorning.oilLevel === '1/2' || dataMorning.oilLevel === 'vacio';
-                                    const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                    const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                    
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
-                                } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
-                                    sectionHasData = true;
-                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                }
-                                
-                                if (dataAfternoon && dataAfternoon.oilLevel) {
-                                    sectionHasData = true;
-                                    const userInfo = dataAfternoon.user || 'Usuario';
-                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    
-                                    const oilLevelText = {
-                                        'full': '🟢 Full',
-                                        '3/4': '🟡 3/4',
-                                        '1/2': '🟠 1/2',
-                                        'vacio': '🔴 Vacío'
-                                    }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
-                                    
-                                    const hasAlert = dataAfternoon.oilLevel === '1/2' || dataAfternoon.oilLevel === 'vacio';
-                                    const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                    const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                    
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
-                                } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
-                                    sectionHasData = true;
-                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                }
-                            } else {
+                                } else {
                                     // Manejo de chequeos normales (OK/No OK)
                                     if (dataMorning && dataMorning.status === 'ok') {
                                         sectionHasData = true;
                                         const userInfo = dataMorning.user || 'Usuario';
                                         const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                         
-                                        sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
+                                        sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                                     } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
                                         sectionHasData = true;
                                         sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
@@ -2248,7 +2175,7 @@
                                         const userInfo = dataAfternoon.user || 'Usuario';
                                         const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                         
-                                        sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK ` + (timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : '') + `</p>`;
+                                        sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                                     } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
                                         sectionHasData = true;
                                         sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
@@ -2393,7 +2320,6 @@
                 return;
             }
             
-            // Generar resumen del día
             const dateObj = new Date(currentDate + 'T00:00:00');
             const formattedDate = dateObj.toLocaleDateString('es-ES', {
                 weekday: 'long',
@@ -2404,11 +2330,8 @@
             
             let totalActivities = 0;
             let completedActivities = 0;
-            let message = `*📊 REPORTE DIARIO HSB*\n`;
-            message += `📅 ${formattedDate}\n`;
-            message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+            let message = `*📊 REPORTE DIARIO HSB*\n📅 ${formattedDate}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
             
-            // Calcular totales y generar resumen por sección
             sections.forEach(section => {
                 if (!dailyLogs[currentDate].sections[section.id]) return;
                 
@@ -2420,8 +2343,8 @@
                 sectionActivities.forEach(activity => {
                     if (activity.frequency === '2 veces al dia') {
                         sectionTotal += 2;
-                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
-                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_manana'];
+                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_tarde'];
                         
                         if (activity.type === 'parametros') {
                             if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) {
@@ -2435,22 +2358,12 @@
                         } else if (activity.type === 'nivel_aceite') {
                             if (dataMorning && dataMorning.oilLevel) {
                                 sectionCompleted++;
-                                const oilText = {
-                                    'full': '🟢 Full',
-                                    '3/4': '🟡 3/4',
-                                    '1/2': '🟠 1/2',
-                                    'vacio': '🔴 Vacío'
-                                }[dataMorning.oilLevel] || dataMorning.oilLevel;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataMorning.oilLevel] || dataMorning.oilLevel;
                                 sectionDetails += `  • ${activity.name} (Mañana): ${oilText}\n`;
                             }
                             if (dataAfternoon && dataAfternoon.oilLevel) {
                                 sectionCompleted++;
-                                const oilText = {
-                                    'full': '🟢 Full',
-                                    '3/4': '🟡 3/4',
-                                    '1/2': '🟠 1/2',
-                                    'vacio': '🔴 Vacío'
-                                }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
                                 sectionDetails += `  • ${activity.name} (Tarde): ${oilText}\n`;
                             }
                         } else {
@@ -2475,12 +2388,7 @@
                         } else if (activity.type === 'nivel_aceite') {
                             if (activityData && activityData.oilLevel) {
                                 sectionCompleted++;
-                                const oilText = {
-                                    'full': '🟢 Full',
-                                    '3/4': '🟡 3/4',
-                                    '1/2': '🟠 1/2',
-                                    'vacio': '🔴 Vacío'
-                                }[activityData.oilLevel] || activityData.oilLevel;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[activityData.oilLevel] || activityData.oilLevel;
                                 sectionDetails += `  • ${activity.name}: ${oilText}\n`;
                             }
                         } else {
@@ -2495,26 +2403,16 @@
                 if (sectionTotal > 0) {
                     totalActivities += sectionTotal;
                     completedActivities += sectionCompleted;
-                    
                     const percentage = Math.round((sectionCompleted / sectionTotal) * 100);
-                    message += `*${section.icon} ${section.name}*\n`;
-                    message += `Progreso: ${sectionCompleted}/${sectionTotal} (${percentage}%)\n`;
-                    if (sectionDetails) {
-                        message += sectionDetails;
-                    }
+                    message += `*${section.icon} ${section.name}*\nProgreso: ${sectionCompleted}/${sectionTotal} (${percentage}%)\n`;
+                    if (sectionDetails) message += sectionDetails;
                     message += `\n`;
                 }
             });
             
-            // Resumen final
             const totalPercentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
-            message += `━━━━━━━━━━━━━━━━━━━━\n`;
-            message += `*📈 RESUMEN TOTAL*\n`;
-            message += `✓ Completadas: ${completedActivities}/${totalActivities}\n`;
-            message += `📊 Progreso: ${totalPercentage}%\n\n`;
-            message += `_Generado por HSB App_`;
+            message += `━━━━━━━━━━━━━━━━━━━━\n*📈 RESUMEN TOTAL*\n✓ Completadas: ${completedActivities}/${totalActivities}\n📊 Progreso: ${totalPercentage}%\n\n_Generado por HSB App_`;
             
-            // Abrir WhatsApp con el mensaje
             const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
         }
@@ -2525,7 +2423,6 @@
                 return;
             }
             
-            // Generar datos en formato CSV
             const dateObj = new Date(currentDate + 'T00:00:00');
             const formattedDate = dateObj.toLocaleDateString('es-ES', {
                 year: 'numeric',
@@ -2533,11 +2430,10 @@
                 day: 'numeric'
             });
             
-            let csvContent = '\uFEFF'; // BOM para UTF-8
+            let csvContent = '\uFEFF';
             csvContent += `REPORTE DIARIO HSB - ${formattedDate}\n\n`;
             csvContent += 'Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
             
-            // Recorrer todas las secciones y actividades
             sections.forEach(section => {
                 if (!dailyLogs[currentDate].sections[section.id]) return;
                 
@@ -2545,8 +2441,7 @@
                 
                 sectionActivities.forEach(activity => {
                     if (activity.frequency === '2 veces al dia') {
-                        // Turno Mañana
-                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
+                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_manana'];
                         if (dataMorning) {
                             const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
                             const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
@@ -2554,13 +2449,12 @@
                             const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
                             const user = dataMorning.user || '';
                             const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
-                            const obs = (dataMorning.observations || '').replace(/,/g, ';'); // Reemplazar comas
+                            const obs = (dataMorning.observations || '').replace(/,/g, ';');
                             
                             csvContent += `"${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
                         }
                         
-                        // Turno Tarde
-                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_tarde'];
                         if (dataAfternoon) {
                             const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
                             const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
@@ -2589,7 +2483,6 @@
                 });
             });
             
-            // Crear archivo y descargar
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
@@ -2818,65 +2711,50 @@
                                         detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                     }
                                 } else if (activity.type === 'chequeo') {
-                                    // Manejo de chequeo normal (OK)
-                                    if (dataMorning && dataMorning.status === 'ok') {
-                                        const userInfo = dataMorning.user || 'Usuario';
-                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Mañana):</strong> ✓ OK <small style="color: #666;">(${userInfo} - ${timeInfo})</small></p>`;
+                                    // Verificar si es Nivel de Aceite
+                                    if (activity.name.toLowerCase().includes('nivel') && activity.name.toLowerCase().includes('aceite')) {
+                                        // Manejo especial para Nivel de Aceite con 4 niveles
+                                        if (dataMorning && dataMorning.oilLevel) {
+                                            const userInfo = dataMorning.user || 'Usuario';
+                                            const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                            
+                                            const oilLevelText = {
+                                                'full': '🟢 Full',
+                                                '3/4': '🟡 3/4',
+                                                '1/2': '🟠 1/2',
+                                                'vacio': '🔴 Vacío'
+                                            }[dataMorning.oilLevel] || dataMorning.oilLevel;
+                                            
+                                            const hasAlert = dataMorning.oilLevel === '1/2' || dataMorning.oilLevel === 'vacio';
+                                            const alertSymbol = hasAlert ? '⚠️ ' : '';
+                                            const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
+                                            
+                                            detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                        } else if (dataMorning && dataMorning.incomplete) {
+                                            // Mostrar alerta de no realizada
+                                            detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
+                                        }
+                                        if (dataAfternoon && dataAfternoon.oilLevel) {
+                                            const userInfo = dataAfternoon.user || 'Usuario';
+                                            const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                            
+                                            const oilLevelText = {
+                                                'full': '🟢 Full',
+                                                '3/4': '🟡 3/4',
+                                                '1/2': '🟠 1/2',
+                                                'vacio': '🔴 Vacío'
+                                            }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
+                                            
+                                            const hasAlert = dataAfternoon.oilLevel === '1/2' || dataAfternoon.oilLevel === 'vacio';
+                                            const alertSymbol = hasAlert ? '⚠️ ' : '';
+                                            const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
+                                            
+                                            detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                        } else if (dataAfternoon && dataAfternoon.incomplete) {
+                                            // Mostrar alerta de no realizada
+                                            detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
+                                        }
                                     } else {
-                                        detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                    
-                                    if (dataAfternoon && dataAfternoon.status === 'ok') {
-                                        const userInfo = dataAfternoon.user || 'Usuario';
-                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Tarde):</strong> ✓ OK <small style="color: #666;">(${userInfo} - ${timeInfo})</small></p>`;
-                                    } else {
-                                        detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                } else if (activity.type === 'nivel_aceite') {
-                                    // Manejo especial para Nivel de Aceite con 4 niveles
-                                    if (dataMorning && dataMorning.oilLevel) {
-                                        const userInfo = dataMorning.user || 'Usuario';
-                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        const oilLevelText = {
-                                            'full': '🟢 Full',
-                                            '3/4': '🟡 3/4',
-                                            '1/2': '🟠 1/2',
-                                            'vacio': '🔴 Vacío'
-                                        }[dataMorning.oilLevel] || dataMorning.oilLevel;
-                                        
-                                        const hasAlert = dataMorning.oilLevel === '1/2' || dataMorning.oilLevel === 'vacio';
-                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                        
-                                        detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
-                                    } else if (dataMorning && dataMorning.incomplete) {
-                                        // Mostrar alerta de no realizada
-                                        detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                    if (dataAfternoon && dataAfternoon.oilLevel) {
-                                        const userInfo = dataAfternoon.user || 'Usuario';
-                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        const oilLevelText = {
-                                            'full': '🟢 Full',
-                                            '3/4': '🟡 3/4',
-                                            '1/2': '🟠 1/2',
-                                            'vacio': '🔴 Vacío'
-                                        }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
-                                        
-                                        const hasAlert = dataAfternoon.oilLevel === '1/2' || dataAfternoon.oilLevel === 'vacio';
-                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                        
-                                        detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
-                                    } else if (dataAfternoon && dataAfternoon.incomplete) {
-                                        // Mostrar alerta de no realizada
-                                        detailHTML += `<p style="margin: 5px 0; color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                } else {
                                         // Manejo de chequeos normales (OK/No OK)
                                         if (dataMorning && dataMorning.status === 'ok') {
                                             const userInfo = dataMorning.user || 'Usuario';
@@ -2946,7 +2824,6 @@
                 return;
             }
             
-            // Usar la misma función de reporte diario para mostrar el detalle
             container.innerHTML = renderDayReport(dateStr, false);
         }
         
@@ -3588,12 +3465,10 @@
             
             currentEditActivityId = activityId;
             
-            // Llenar campos del modal con datos actuales
             document.getElementById('editActivityName').value = activity.name;
             document.getElementById('editActivityType').value = activity.type;
             document.getElementById('editActivityFrequency').value = activity.frequency;
             
-            // Mostrar/ocultar campos según tipo
             toggleEditParametrosFields();
             
             if (activity.type === 'parametros') {
@@ -3602,19 +3477,13 @@
                 document.getElementById('editActivityMax').value = activity.max !== null && activity.max !== undefined ? activity.max : '';
             }
             
-            // Mostrar modal
             document.getElementById('editActivityModal').style.display = 'flex';
         }
         
         function toggleEditParametrosFields() {
             const type = document.getElementById('editActivityType').value;
             const parametrosFields = document.getElementById('editParametrosFields');
-            
-            if (type === 'parametros') {
-                parametrosFields.style.display = 'block';
-            } else {
-                parametrosFields.style.display = 'none';
-            }
+            parametrosFields.style.display = type === 'parametros' ? 'block' : 'none';
         }
         
         function closeEditActivityModal() {
@@ -3637,7 +3506,6 @@
                 return;
             }
             
-            // Actualizar actividad
             activity.name = name;
             activity.type = type;
             activity.frequency = frequency;
@@ -3651,7 +3519,6 @@
                 activity.min = min !== '' ? parseFloat(min) : null;
                 activity.max = max !== '' ? parseFloat(max) : null;
             } else {
-                // Limpiar campos de parámetros si cambió a otro tipo
                 activity.unit = '';
                 activity.min = null;
                 activity.max = null;
@@ -3662,7 +3529,6 @@
             closeEditActivityModal();
             renderConfiguracion();
             
-            // Re-renderizar si estamos en la vista de secciones
             if (currentSectionId) {
                 showSectionDetail(currentSectionId);
             }
