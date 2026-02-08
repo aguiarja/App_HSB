@@ -745,6 +745,7 @@
         let currentUser = null;
         let currentSectionId = null;
         let currentDate = new Date().toISOString().split('T')[0];
+        let accumulatedPhotos = []; // Para acumular fotos en móvil
 
         // Firebase references (will be initialized after Firebase loads)
         let usersRef;
@@ -1457,6 +1458,9 @@
             const modal = document.getElementById('novedadesModal');
             const content = document.getElementById('novedadesModalContent');
             
+            // Resetear fotos acumuladas al abrir modal
+            accumulatedPhotos = [];
+            
             content.innerHTML = `
                 <div class="form-group">
                     <label>Novedades Predefinidas:</label>
@@ -1473,35 +1477,70 @@
                 </div>
                 <div class="form-group">
                     <label>📷 Fotos (Opcional - Máximo 3):</label>
-                    <input type="file" id="novedadPhotos" multiple accept="image/*" max="3" style="display: none;">
+                    <input type="file" id="novedadPhotos" accept="image/*" capture="environment" style="display: none;">
                     <div class="photo-upload" onclick="document.getElementById('novedadPhotos').click()">
-                        <p>📷 Haz clic para agregar fotos</p>
-                        <small style="color: #999;">Máximo 3 fotos</small>
+                        <p>📷 Agregar foto (<span id="photoCount">0</span>/3)</p>
+                        <small style="color: #999;">Toca para tomar o seleccionar foto</small>
                     </div>
                     <div id="novedadPhotosPreview" class="photo-preview"></div>
                 </div>
                 <button onclick="saveNovedad()" class="btn">💾 Guardar Novedad</button>
             `;
             
-            // Event listener para preview de fotos
+            // Event listener para agregar fotos de forma acumulativa
             document.getElementById('novedadPhotos').addEventListener('change', function(e) {
-                const preview = document.getElementById('novedadPhotosPreview');
-                preview.innerHTML = '';
-                const files = Array.from(e.target.files).slice(0, 3); // Máximo 3 fotos
+                const files = Array.from(e.target.files);
                 
+                // Agregar nuevas fotos sin exceder 3 en total
                 files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const img = document.createElement('img');
-                        img.src = event.target.result;
-                        img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 8px;';
-                        preview.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
+                    if (accumulatedPhotos.length < 3) {
+                        accumulatedPhotos.push(file);
+                    }
                 });
+                
+                // Actualizar preview
+                updatePhotosPreview();
+                
+                // Resetear input para permitir seleccionar la misma foto de nuevo
+                e.target.value = '';
             });
             
             modal.style.display = 'block';
+        }
+        
+        function updatePhotosPreview() {
+            const preview = document.getElementById('novedadPhotosPreview');
+            const counter = document.getElementById('photoCount');
+            
+            preview.innerHTML = '';
+            counter.textContent = accumulatedPhotos.length;
+            
+            accumulatedPhotos.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const photoDiv = document.createElement('div');
+                    photoDiv.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+                    
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 8px;';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '✕';
+                    removeBtn.style.cssText = 'position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px;';
+                    removeBtn.onclick = () => removePhoto(index);
+                    
+                    photoDiv.appendChild(img);
+                    photoDiv.appendChild(removeBtn);
+                    preview.appendChild(photoDiv);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function removePhoto(index) {
+            accumulatedPhotos.splice(index, 1);
+            updatePhotosPreview();
         }
 
         function closeNovedadesModal() {
@@ -1526,15 +1565,14 @@
             if (selectedNovedades.length > 0) {
                 showSyncIndicator('💾 Guardando novedad...', 'syncing');
                 
-                // Subir fotos si hay
-                const photoFiles = document.getElementById('novedadPhotos').files;
+                // Subir fotos acumuladas si hay
                 const photoURLs = [];
                 
-                if (photoFiles.length > 0) {
+                if (accumulatedPhotos.length > 0) {
                     showSyncIndicator('📷 Subiendo fotos...', 'syncing');
                     
-                    for (let i = 0; i < Math.min(photoFiles.length, 3); i++) {
-                        const file = photoFiles[i];
+                    for (let i = 0; i < accumulatedPhotos.length; i++) {
+                        const file = accumulatedPhotos[i];
                         const timestamp = Date.now();
                         const fileName = `novedades/${currentDate}/${timestamp}_${i}.jpg`;
                         const storageRef = storage.ref(fileName);
@@ -1564,6 +1602,9 @@
                 showSyncIndicator('✓ Novedad guardada', 'synced');
                 closeNovedadesModal();
                 renderSections();
+                
+                // Limpiar fotos acumuladas
+                accumulatedPhotos = [];
             } else {
                 alert('Por favor selecciona o escribe al menos una novedad');
             }
