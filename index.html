@@ -1584,7 +1584,7 @@
 
             // Mostrar detalles por sección
             sections.forEach(section => {
-                const sectionActivities = activities.filter(a => a.sectionId === section.id && a.showInSummary === 'detalle');
+                const sectionActivities = activities.filter(a => a.sectionId === section.id && (a.showInSummary === 'detalle' || a.showInSummary === 'estado'));
                 
                 if (sectionActivities.length > 0) {
                     let sectionHasData = false;
@@ -1841,7 +1841,7 @@
                 const log = dailyLogs[date];
                 
                 sections.forEach(section => {
-                    const sectionActivities = activities.filter(a => a.sectionId === section.id && a.showInSummary === 'detalle');
+                    const sectionActivities = activities.filter(a => a.sectionId === section.id && (a.showInSummary === 'detalle' || a.showInSummary === 'estado'));
                     
                     if (sectionActivities.length > 0 && log.sections && log.sections[section.id]) {
                         detailHTML += `<h4 style="color: #667eea; margin-top: 15px; margin-bottom: 10px;">${section.icon} ${section.name}</h4>`;
