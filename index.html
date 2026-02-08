@@ -625,9 +625,8 @@
         <div id="tab-reporte-diario" class="tab-content">
             <div class="section-header">
                 <h2>📊 Reporte Diario</h2>
-                <div style="display: flex; gap: 10px;">
+                <div>
                     <button onclick="shareReport()" class="btn btn-secondary btn-small">📱 Compartir WhatsApp</button>
-                    <button onclick="exportToExcel()" class="btn btn-secondary btn-small">📥 Exportar Excel</button>
                 </div>
             </div>
             <div id="reportContent"></div>
@@ -666,12 +665,13 @@
         <div id="tab-historial" class="tab-content">
             <div class="section-header">
                 <h2>📋 Historial</h2>
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
                     <label style="font-weight: bold; color: #667eea;">📅 Seleccionar fecha:</label>
                     <input type="date" id="historialDatePicker" 
                            style="padding: 8px 12px; border-radius: 5px; border: 2px solid #667eea; font-size: 14px;"
                            onchange="loadHistorialForDate(this.value)">
                     <button onclick="loadTodayHistorial()" class="btn btn-secondary btn-small">Hoy</button>
+                    <button onclick="exportHistorialToExcel()" class="btn btn-secondary btn-small">📥 Exportar Excel</button>
                 </div>
             </div>
             <div id="historialContent"></div>
@@ -1572,12 +1572,33 @@
                 const value = activityData.value;
                 // Verificar que tenga valor válido (no null, no undefined, no NaN, no string vacío)
                 const hasValue = value !== null && value !== undefined && value !== '' && !isNaN(value);
-                const hasAlert = hasValue && activity.min && activity.max && (parseFloat(value) < activity.min || parseFloat(value) > activity.max);
+                
+                // Verificar si está fuera de rango (funciona con solo min, solo max, o ambos)
+                let hasAlert = false;
+                if (hasValue) {
+                    const numValue = parseFloat(value);
+                    if (activity.min !== null && activity.min !== undefined && numValue < activity.min) {
+                        hasAlert = true;
+                    }
+                    if (activity.max !== null && activity.max !== undefined && numValue > activity.max) {
+                        hasAlert = true;
+                    }
+                }
                 
                 // Campo VERDE si tiene valor (incluso fuera de rango), NARANJA si está vacío
                 let fieldClass = hasValue ? 'completed' : 'pending';
                 
                 fieldDiv.className = `activity-field ${fieldClass}`;
+                
+                // Generar texto del rango
+                let rangeText = '';
+                if (activity.min !== null && activity.min !== undefined && activity.max !== null && activity.max !== undefined) {
+                    rangeText = `Rango normal: ${activity.min} - ${activity.max} ${activity.unit || ''}`;
+                } else if (activity.min !== null && activity.min !== undefined) {
+                    rangeText = `Mínimo: ${activity.min} ${activity.unit || ''}`;
+                } else if (activity.max !== null && activity.max !== undefined) {
+                    rangeText = `Máximo: ${activity.max} ${activity.unit || ''}`;
+                }
                 
                 fieldDiv.innerHTML = `
                     <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
@@ -1586,8 +1607,8 @@
                            class="${hasValue ? 'completed' : 'pending'}"
                            onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)"
                            onkeypress="handleEnterKey(event, 'activity_${activityKey}')">
-                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
-                    ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
+                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango</div>` : ''}
+                    ${rangeText ? `<small style="color: #666;">${rangeText}</small>` : ''}
                 `;
             } else if (activity.type === 'nivel_aceite') {
                 // Tipo 'nivel_aceite' - Selector de 4 niveles
@@ -1661,11 +1682,18 @@
             // Actualizar alerta inmediatamente en el DOM
             const selectElement = document.getElementById(`activity_${activityKey}_oil`);
             if (selectElement) {
-                const parentDiv = selectElement.parentElement;
+                const fieldDiv = selectElement.closest('.activity-field');
                 const hasAlert = level === '1/2' || level === 'vacio';
                 
+                // Actualizar clase del fieldDiv (para el color de fondo)
+                if (level) {
+                    fieldDiv.className = 'activity-field completed';
+                } else {
+                    fieldDiv.className = 'activity-field pending';
+                }
+                
                 // Buscar si ya existe un div de alerta
-                let alertDiv = parentDiv.querySelector('.alert-message');
+                let alertDiv = fieldDiv.querySelector('.alert-message');
                 
                 if (hasAlert) {
                     // Si debe haber alerta y no existe, crearla
@@ -2417,84 +2445,271 @@
             window.open(url, '_blank');
         }
         
-        function exportToExcel() {
-            if (!dailyLogs[currentDate]) {
-                alert('No hay datos para exportar');
+        function shareReportByDate(dateStr) {
+            if (!dailyLogs[dateStr]) {
+                alert('No hay datos para compartir');
                 return;
             }
             
-            const dateObj = new Date(currentDate + 'T00:00:00');
+            const dateObj = new Date(dateStr + 'T00:00:00');
             const formattedDate = dateObj.toLocaleDateString('es-ES', {
+                weekday: 'long',
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
             });
             
-            let csvContent = '\uFEFF';
-            csvContent += `REPORTE DIARIO HSB - ${formattedDate}\n\n`;
-            csvContent += 'Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
+            let totalActivities = 0;
+            let completedActivities = 0;
+            let message = `*📊 REPORTE DIARIO HSB*\n📅 ${formattedDate}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
             
             sections.forEach(section => {
-                if (!dailyLogs[currentDate].sections[section.id]) return;
+                if (!dailyLogs[dateStr].sections[section.id]) return;
                 
                 const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                let sectionTotal = 0;
+                let sectionCompleted = 0;
+                let sectionDetails = '';
                 
                 sectionActivities.forEach(activity => {
                     if (activity.frequency === '2 veces al dia') {
-                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_manana'];
-                        if (dataMorning) {
-                            const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
-                            const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                            const status = activity.type === 'chequeo' && dataMorning.status ? 'OK' : '';
-                            const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
-                            const user = dataMorning.user || '';
-                            const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
-                            const obs = (dataMorning.observations || '').replace(/,/g, ';');
-                            
-                            csvContent += `"${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                        }
+                        sectionTotal += 2;
+                        const dataMorning = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_manana'];
+                        const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_tarde'];
                         
-                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_tarde'];
-                        if (dataAfternoon) {
-                            const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
-                            const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                            const status = activity.type === 'chequeo' && dataAfternoon.status ? 'OK' : '';
-                            const oilLevel = activity.type === 'nivel_aceite' && dataAfternoon.oilLevel ? dataAfternoon.oilLevel : '';
-                            const user = dataAfternoon.user || '';
-                            const time = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES') : '';
-                            const obs = (dataAfternoon.observations || '').replace(/,/g, ';');
-                            
-                            csvContent += `"${section.name}","${activity.name}","Tarde","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                        if (activity.type === 'parametros') {
+                            if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name} (Mañana): ${dataMorning.value} ${activity.unit || ''}\n`;
+                            }
+                            if (dataAfternoon && dataAfternoon.value !== null && !isNaN(dataAfternoon.value)) {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name} (Tarde): ${dataAfternoon.value} ${activity.unit || ''}\n`;
+                            }
+                        } else if (activity.type === 'nivel_aceite') {
+                            if (dataMorning && dataMorning.oilLevel) {
+                                sectionCompleted++;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataMorning.oilLevel] || dataMorning.oilLevel;
+                                sectionDetails += `  • ${activity.name} (Mañana): ${oilText}\n`;
+                            }
+                            if (dataAfternoon && dataAfternoon.oilLevel) {
+                                sectionCompleted++;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
+                                sectionDetails += `  • ${activity.name} (Tarde): ${oilText}\n`;
+                            }
+                        } else {
+                            if (dataMorning && dataMorning.status === 'ok') {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name} (Mañana): ✓ OK\n`;
+                            }
+                            if (dataAfternoon && dataAfternoon.status === 'ok') {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name} (Tarde): ✓ OK\n`;
+                            }
                         }
                     } else if (activity.frequency === 'Diario') {
-                        const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
-                        if (activityData) {
-                            const value = activity.type === 'parametros' && activityData.value !== null ? activityData.value : '';
-                            const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                            const status = activity.type === 'chequeo' && activityData.status ? 'OK' : '';
-                            const oilLevel = activity.type === 'nivel_aceite' && activityData.oilLevel ? activityData.oilLevel : '';
-                            const user = activityData.user || '';
-                            const time = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES') : '';
-                            const obs = (activityData.observations || '').replace(/,/g, ';');
-                            
-                            csvContent += `"${section.name}","${activity.name}","Diario","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                        sectionTotal += 1;
+                        const activityData = dailyLogs[dateStr].sections[section.id].activities[activity.id];
+                        
+                        if (activity.type === 'parametros') {
+                            if (activityData && activityData.value !== null && !isNaN(activityData.value)) {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name}: ${activityData.value} ${activity.unit || ''}\n`;
+                            }
+                        } else if (activity.type === 'nivel_aceite') {
+                            if (activityData && activityData.oilLevel) {
+                                sectionCompleted++;
+                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[activityData.oilLevel] || activityData.oilLevel;
+                                sectionDetails += `  • ${activity.name}: ${oilText}\n`;
+                            }
+                        } else {
+                            if (activityData && activityData.status === 'ok') {
+                                sectionCompleted++;
+                                sectionDetails += `  • ${activity.name}: ✓ OK\n`;
+                            }
                         }
                     }
                 });
+                
+                if (sectionTotal > 0) {
+                    totalActivities += sectionTotal;
+                    completedActivities += sectionCompleted;
+                    const percentage = Math.round((sectionCompleted / sectionTotal) * 100);
+                    message += `*${section.icon} ${section.name}*\nProgreso: ${sectionCompleted}/${sectionTotal} (${percentage}%)\n`;
+                    if (sectionDetails) message += sectionDetails;
+                    message += `\n`;
+                }
             });
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
+            const totalPercentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+            message += `━━━━━━━━━━━━━━━━━━━━\n*📈 RESUMEN TOTAL*\n✓ Completadas: ${completedActivities}/${totalActivities}\n📊 Progreso: ${totalPercentage}%\n\n_Generado por HSB App_`;
             
-            link.setAttribute('href', url);
-            link.setAttribute('download', `Reporte_HSB_${currentDate}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+        
+        function exportHistorialToExcel() {
+            // Verificar si hay una fecha seleccionada en el calendario
+            const selectedDate = document.getElementById('historialDatePicker').value;
             
-            showSyncIndicator('✓ Excel exportado', 'synced');
+            if (selectedDate) {
+                // Exportar solo la fecha seleccionada
+                if (!dailyLogs[selectedDate]) {
+                    alert('No hay datos para la fecha seleccionada');
+                    return;
+                }
+                
+                const dateObj = new Date(selectedDate + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                let csvContent = '\uFEFF';
+                csvContent += `REPORTE HSB - ${formattedDate}\n\n`;
+                csvContent += 'Fecha,Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
+                
+                sections.forEach(section => {
+                    if (!dailyLogs[selectedDate].sections[section.id]) return;
+                    
+                    const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                    
+                    sectionActivities.forEach(activity => {
+                        if (activity.frequency === '2 veces al dia') {
+                            const dataMorning = dailyLogs[selectedDate].sections[section.id].activities[activity.id + '_manana'];
+                            if (dataMorning) {
+                                const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
+                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                const status = activity.type === 'chequeo' && dataMorning.status ? 'OK' : '';
+                                const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
+                                const user = dataMorning.user || '';
+                                const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
+                                const obs = (dataMorning.observations || '').replace(/,/g, ';');
+                                
+                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                            }
+                            
+                            const dataAfternoon = dailyLogs[selectedDate].sections[section.id].activities[activity.id + '_tarde'];
+                            if (dataAfternoon) {
+                                const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
+                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                const status = activity.type === 'chequeo' && dataAfternoon.status ? 'OK' : '';
+                                const oilLevel = activity.type === 'nivel_aceite' && dataAfternoon.oilLevel ? dataAfternoon.oilLevel : '';
+                                const user = dataAfternoon.user || '';
+                                const time = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES') : '';
+                                const obs = (dataAfternoon.observations || '').replace(/,/g, ';');
+                                
+                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Tarde","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                            }
+                        } else if (activity.frequency === 'Diario') {
+                            const activityData = dailyLogs[selectedDate].sections[section.id].activities[activity.id];
+                            if (activityData) {
+                                const value = activity.type === 'parametros' && activityData.value !== null ? activityData.value : '';
+                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                const status = activity.type === 'chequeo' && activityData.status ? 'OK' : '';
+                                const oilLevel = activity.type === 'nivel_aceite' && activityData.oilLevel ? activityData.oilLevel : '';
+                                const user = activityData.user || '';
+                                const time = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES') : '';
+                                const obs = (activityData.observations || '').replace(/,/g, ';');
+                                
+                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Diario","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                            }
+                        }
+                    });
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `Reporte_HSB_${selectedDate}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSyncIndicator('✓ Excel exportado', 'synced');
+            } else {
+                // Exportar todo el historial
+                const dates = Object.keys(dailyLogs).sort();
+                
+                if (dates.length === 0) {
+                    alert('No hay datos en el historial para exportar');
+                    return;
+                }
+                
+                let csvContent = '\uFEFF';
+                csvContent += `HISTORIAL COMPLETO HSB\n\n`;
+                csvContent += 'Fecha,Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
+                
+                dates.forEach(date => {
+                    sections.forEach(section => {
+                        if (!dailyLogs[date].sections[section.id]) return;
+                        
+                        const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                        
+                        sectionActivities.forEach(activity => {
+                            if (activity.frequency === '2 veces al dia') {
+                                const dataMorning = dailyLogs[date].sections[section.id].activities[activity.id + '_manana'];
+                                if (dataMorning) {
+                                    const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
+                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                    const status = activity.type === 'chequeo' && dataMorning.status ? 'OK' : '';
+                                    const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
+                                    const user = dataMorning.user || '';
+                                    const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
+                                    const obs = (dataMorning.observations || '').replace(/,/g, ';');
+                                    
+                                    csvContent += `"${date}","${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                                }
+                                
+                                const dataAfternoon = dailyLogs[date].sections[section.id].activities[activity.id + '_tarde'];
+                                if (dataAfternoon) {
+                                    const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
+                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                    const status = activity.type === 'chequeo' && dataAfternoon.status ? 'OK' : '';
+                                    const oilLevel = activity.type === 'nivel_aceite' && dataAfternoon.oilLevel ? dataAfternoon.oilLevel : '';
+                                    const user = dataAfternoon.user || '';
+                                    const time = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES') : '';
+                                    const obs = (dataAfternoon.observations || '').replace(/,/g, ';');
+                                    
+                                    csvContent += `"${date}","${section.name}","${activity.name}","Tarde","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                                }
+                            } else if (activity.frequency === 'Diario') {
+                                const activityData = dailyLogs[date].sections[section.id].activities[activity.id];
+                                if (activityData) {
+                                    const value = activity.type === 'parametros' && activityData.value !== null ? activityData.value : '';
+                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
+                                    const status = activity.type === 'chequeo' && activityData.status ? 'OK' : '';
+                                    const oilLevel = activity.type === 'nivel_aceite' && activityData.oilLevel ? activityData.oilLevel : '';
+                                    const user = activityData.user || '';
+                                    const time = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES') : '';
+                                    const obs = (activityData.observations || '').replace(/,/g, ';');
+                                    
+                                    csvContent += `"${date}","${section.name}","${activity.name}","Diario","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
+                                }
+                            }
+                        });
+                    });
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                const firstDate = dates[0];
+                const lastDate = dates[dates.length - 1];
+                link.setAttribute('href', url);
+                link.setAttribute('download', `Historial_HSB_${firstDate}_a_${lastDate}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSyncIndicator('✓ Historial completo exportado', 'synced');
+            }
         }
 
         // ==================== PLAN ====================
@@ -2631,17 +2846,22 @@
                 const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
                 html += `
-                    <div class="report-summary" style="margin-bottom: 15px; cursor: pointer; transition: all 0.3s;" 
-                         onclick="toggleHistorialDetail('${date}')"
+                    <div class="report-summary" style="margin-bottom: 15px; transition: all 0.3s;" 
                          onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
                          onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h3 style="color: #1e3c72;">📅 ${new Date(date).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
+                            <div style="flex: 1; cursor: pointer;" onclick="toggleHistorialDetail('${date}')">
+                                <h3 style="color: #1e3c72;">📅 ${new Date(date + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
                                 <p style="margin-top: 5px; color: #666;">Completado: ${percentage}% (${completed}/${total})</p>
                             </div>
-                            <div style="font-size: 24px; color: #667eea;">
-                                <span id="arrow_${date}">▶</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button onclick="event.stopPropagation(); shareReportByDate('${date}')" 
+                                        class="btn btn-secondary btn-small" 
+                                        style="font-size: 12px; padding: 8px 12px;">
+                                    📱 WhatsApp
+                                </button>
+                                <span id="arrow_${date}" style="font-size: 24px; color: #667eea; cursor: pointer;" 
+                                      onclick="toggleHistorialDetail('${date}')">▶</span>
                             </div>
                         </div>
                         <div id="detail_${date}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #eee;">
