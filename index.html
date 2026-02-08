@@ -828,15 +828,21 @@
             const hour = now.getHours();
             const minutes = now.getMinutes();
             
-            // Si son antes de las 12:15 PM, usar el día anterior
-            // 12:15 PM = 12 horas y 15 minutos
-            if (hour < 12 || (hour === 12 && minutes < 15)) {
+            console.log(`⏰ Hora actual del sistema: ${hour}:${minutes}`);
+            
+            // Si son antes de las 12:05 PM, usar el día anterior
+            // 12:05 PM = 12 horas y 5 minutos
+            if (hour < 12 || (hour === 12 && minutes < 5)) {
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
-                return yesterday.toISOString().split('T')[0];
+                const dateStr = yesterday.toISOString().split('T')[0];
+                console.log(`📅 Antes de 12:05 PM → Usando día anterior: ${dateStr}`);
+                return dateStr;
             }
             
-            return now.toISOString().split('T')[0];
+            const dateStr = now.toISOString().split('T')[0];
+            console.log(`📅 Después de 12:05 PM → Usando día actual: ${dateStr}`);
+            return dateStr;
         }
         
         let currentDate = getOperationalDate();
@@ -1023,8 +1029,64 @@
                 planActivities = planSnap.val() || [];
 
                 console.log('✅ Data loaded successfully!');
+                
+                // Reparar dailyLogs con secciones faltantes
+                await repairDailyLogs();
             } catch (error) {
                 console.error('❌ Error loading data:', error);
+            }
+        }
+        
+        async function repairDailyLogs() {
+            console.log('🔧 Reparando dailyLogs con secciones faltantes...');
+            
+            let repaired = false;
+            
+            // Para cada día en dailyLogs
+            for (const [date, log] of Object.entries(dailyLogs)) {
+                if (!log.sections) {
+                    log.sections = {};
+                }
+                
+                // Para cada sección actual del sistema
+                sections.forEach(section => {
+                    // Si esta sección no existe en este día, agregarla
+                    if (!log.sections[section.id]) {
+                        console.log(`  ➕ Agregando sección "${section.name}" (id:${section.id}) al día ${date}`);
+                        
+                        log.sections[section.id] = {
+                            activities: {},
+                            photos: []
+                        };
+                        
+                        // Agregar actividades de esta sección
+                        const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                        sectionActivities.forEach(activity => {
+                            if (activity.frequency === '2 veces al dia') {
+                                log.sections[section.id].activities[`${activity.id}_manana`] = {
+                                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                                };
+                                log.sections[section.id].activities[`${activity.id}_tarde`] = {
+                                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                                };
+                            } else if (activity.frequency === 'Diario') {
+                                log.sections[section.id].activities[activity.id] = {
+                                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                                };
+                            }
+                        });
+                        
+                        repaired = true;
+                    }
+                });
+            }
+            
+            // Si se reparó algo, guardar en Firebase
+            if (repaired) {
+                await dailyLogsRef.set(dailyLogs);
+                console.log('✅ DailyLogs reparados y guardados');
+            } else {
+                console.log('✅ DailyLogs están completos');
             }
         }
 
