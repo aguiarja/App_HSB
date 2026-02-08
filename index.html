@@ -749,9 +749,11 @@
         function getOperationalDate() {
             const now = new Date();
             const hour = now.getHours();
+            const minutes = now.getMinutes();
             
-            // Si son antes de las 6:00 AM, usar el día anterior
-            if (hour < 6) {
+            // Si son antes de las 12:05 PM, usar el día anterior
+            // 12:05 PM = 12 horas y 5 minutos
+            if (hour < 12 || (hour === 12 && minutes < 5)) {
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
                 return yesterday.toISOString().split('T')[0];
@@ -2587,7 +2589,7 @@
             });
             
             html += `
-                <button onclick="alert('Agregar nueva actividad')" 
+                <button onclick="promptAddActivity()" 
                         style="background: #28a745; color: white; border: none; 
                                padding: 10px 20px; border-radius: 5px; cursor: pointer; 
                                font-size: 14px; margin-top: 15px; width: 100%;">
@@ -2598,10 +2600,68 @@
             container.innerHTML = html;
         }
         
+        async function promptAddActivity() {
+            // Seleccionar sección
+            const sectionId = prompt('ID de la sección (1=Parámetros, 2=MYCOM, 3=VILTER, etc.):');
+            if (!sectionId) return;
+            
+            const section = sections.find(s => s.id === parseInt(sectionId));
+            if (!section) {
+                alert('Sección no encontrada');
+                return;
+            }
+            
+            // Datos de la actividad
+            const name = prompt('Nombre de la actividad:');
+            if (!name || !name.trim()) return;
+            
+            const type = prompt('Tipo: "parametros" o "chequeo":');
+            if (type !== 'parametros' && type !== 'chequeo') {
+                alert('Tipo inválido. Debe ser "parametros" o "chequeo"');
+                return;
+            }
+            
+            const frequency = prompt('Frecuencia: "2 veces al dia", "semanal", "mensual", "trimestral":');
+            if (!frequency) return;
+            
+            let unit = null, min = null, max = null;
+            
+            if (type === 'parametros') {
+                unit = prompt('Unidad (ej: PSI, °C, %, A):') || '';
+                const minStr = prompt('Valor mínimo:');
+                const maxStr = prompt('Valor máximo:');
+                min = minStr ? parseFloat(minStr) : null;
+                max = maxStr ? parseFloat(maxStr) : null;
+            }
+            
+            // Crear actividad
+            const newId = Math.max(...activities.map(a => a.id), 0) + 1;
+            const newOrder = Math.max(...activities.filter(a => a.sectionId === section.id).map(a => a.order), 0) + 1;
+            
+            const newActivity = {
+                id: newId,
+                sectionId: section.id,
+                name: name.trim(),
+                type: type,
+                frequency: frequency,
+                unit: unit,
+                min: min,
+                max: max,
+                order: newOrder,
+                showInSummary: 'detalle'
+            };
+            
+            activities.push(newActivity);
+            await activitiesRef.set(activities);
+            
+            showSyncIndicator('✓ Actividad agregada', 'synced');
+            renderConfiguracion();
+        }
+        
         function renderNovedadesConfig(container) {
             let html = '<h4 style="color: #2a5298; margin-bottom: 15px;">Novedades Predefinidas</h4>';
             
-            novedadesPredefinidas.forEach(novedad => {
+            novedadesPredefinidas.forEach((novedad, index) => {
                 html += `
                     <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2609,6 +2669,20 @@
                                 <strong>${novedad.text}</strong>
                             </div>
                             <div>
+                                <button onclick="moveNovedadUp(${novedad.id})" 
+                                        ${index === 0 ? 'disabled style="opacity: 0.3;"' : ''}
+                                        style="background: #667eea; color: white; border: none; 
+                                               padding: 6px 12px; border-radius: 5px; cursor: pointer; 
+                                               font-size: 12px; margin-right: 5px;">
+                                    ↑
+                                </button>
+                                <button onclick="moveNovedadDown(${novedad.id})" 
+                                        ${index === novedadesPredefinidas.length - 1 ? 'disabled style="opacity: 0.3;"' : ''}
+                                        style="background: #667eea; color: white; border: none; 
+                                               padding: 6px 12px; border-radius: 5px; cursor: pointer; 
+                                               font-size: 12px; margin-right: 5px;">
+                                    ↓
+                                </button>
                                 <button onclick="deleteNovedad(${novedad.id})" 
                                         style="background: #dc3545; color: white; border: none; 
                                                padding: 6px 12px; border-radius: 5px; cursor: pointer; 
@@ -2631,6 +2705,34 @@
             `;
             
             container.innerHTML = html;
+        }
+        
+        async function moveNovedadUp(id) {
+            const index = novedadesPredefinidas.findIndex(n => n.id === id);
+            if (index <= 0) return;
+            
+            // Intercambiar posiciones
+            const temp = novedadesPredefinidas[index];
+            novedadesPredefinidas[index] = novedadesPredefinidas[index - 1];
+            novedadesPredefinidas[index - 1] = temp;
+            
+            await novedadesPredefinidasRef.set(novedadesPredefinidas);
+            showSyncIndicator('✓ Orden actualizado', 'synced');
+            renderConfiguracion();
+        }
+        
+        async function moveNovedadDown(id) {
+            const index = novedadesPredefinidas.findIndex(n => n.id === id);
+            if (index < 0 || index >= novedadesPredefinidas.length - 1) return;
+            
+            // Intercambiar posiciones
+            const temp = novedadesPredefinidas[index];
+            novedadesPredefinidas[index] = novedadesPredefinidas[index + 1];
+            novedadesPredefinidas[index + 1] = temp;
+            
+            await novedadesPredefinidasRef.set(novedadesPredefinidas);
+            showSyncIndicator('✓ Orden actualizado', 'synced');
+            renderConfiguracion();
         }
         
         async function promptAddNovedad() {
