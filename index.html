@@ -828,21 +828,14 @@
             const hour = now.getHours();
             const minutes = now.getMinutes();
             
-            console.log(`⏰ Hora actual del sistema: ${hour}:${minutes}`);
-            
             // Si son antes de las 12:05 PM, usar el día anterior
-            // 12:05 PM = 12 horas y 5 minutos
             if (hour < 12 || (hour === 12 && minutes < 5)) {
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
-                const dateStr = yesterday.toISOString().split('T')[0];
-                console.log(`📅 Antes de 12:05 PM → Usando día anterior: ${dateStr}`);
-                return dateStr;
+                return yesterday.toISOString().split('T')[0];
             }
             
-            const dateStr = now.toISOString().split('T')[0];
-            console.log(`📅 Después de 12:05 PM → Usando día actual: ${dateStr}`);
-            return dateStr;
+            return now.toISOString().split('T')[0];
         }
         
         let currentDate = getOperationalDate();
@@ -1958,7 +1951,7 @@
                 <div class="report-summary" style="border-left: 4px solid ${statusColor};">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="color: #1e3c72; margin: 0;">
-                            ${new Date(dateStr).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
+                            ${new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
                         </h3>
                         <span style="background: ${statusColor}; color: white; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold;">
                             ${statusLabel}
@@ -2733,6 +2726,8 @@
             const newId = Math.max(...sections.map(s => s.id), 0) + 1;
             const newOrder = Math.max(...sections.map(s => s.order), 0) + 1;
             
+            console.log(`➕ Creando nueva sección: ${name} (id:${newId}, order:${newOrder})`);
+            
             const newSection = {
                 id: newId,
                 name: name.trim(),
@@ -2744,8 +2739,36 @@
             sections.sort((a, b) => a.order - b.order);
             
             await sectionsRef.set(sections);
+            console.log('✅ Sección guardada en Firebase');
+            
+            // Inicializar la nueva sección en todos los dailyLogs existentes
+            console.log(`🔧 Inicializando sección en ${Object.keys(dailyLogs).length} días...`);
+            
+            for (const [date, log] of Object.entries(dailyLogs)) {
+                if (!log.sections) {
+                    log.sections = {};
+                }
+                
+                if (!log.sections[newId]) {
+                    console.log(`  ➕ Agregando sección id:${newId} al día ${date}`);
+                    log.sections[newId] = {
+                        activities: {},
+                        photos: []
+                    };
+                }
+            }
+            
+            // Guardar dailyLogs actualizados
+            await dailyLogsRef.set(dailyLogs);
+            console.log('✅ DailyLogs actualizados en Firebase');
+            
+            // Recargar datos desde Firebase para asegurar sincronización
+            await loadDataFromFirebase();
+            console.log('✅ Datos recargados desde Firebase');
+            
             showSyncIndicator('✓ Sección agregada', 'synced');
             renderConfiguracion();
+            renderSections(); // Re-renderizar para mostrar la nueva sección
         }
         
         async function deleteSection(id) {
