@@ -610,6 +610,11 @@
                     <strong id="currentUserName"></strong>
                     <div><small id="currentUserRole"></small></div>
                 </div>
+                <div id="systemClock" style="background: #667eea; color: white; padding: 8px 15px; border-radius: 8px; font-size: 13px; text-align: center; margin: 10px 0; font-family: monospace; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-weight: bold; font-size: 16px;" id="clockTime">--:--:--</div>
+                    <div style="font-size: 11px; opacity: 0.9;" id="clockDate">Cargando...</div>
+                    <div style="font-size: 10px; margin-top: 3px; opacity: 0.8;" id="clockDay">Día actual: --</div>
+                </div>
                 <button class="btn-logout" onclick="logout()">🚪 Cerrar Sesión</button>
             </div>
         </div>
@@ -1098,6 +1103,9 @@
             
             renderTabs();
             initializeDailyLog();
+            
+            // Iniciar reloj del sistema
+            startSystemClock();
         }
 
         // ==================== TABS ====================
@@ -3068,6 +3076,55 @@
             
             console.log('🔄 Renovación automática iniciada (verifica cada 5 minutos)');
         }
+        
+        // ==================== RELOJ DEL SISTEMA ====================
+        
+        function updateSystemClock() {
+            const now = new Date();
+            
+            // Formatear hora (HH:MM:SS)
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            // Formatear fecha
+            const dateString = now.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Obtener día operacional (para verificar lógica 12:05 PM)
+            const operationalDate = getOperationalDate();
+            const operationalDateFormatted = new Date(operationalDate + 'T00:00:00').toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            // Actualizar elementos
+            const clockTime = document.getElementById('clockTime');
+            const clockDate = document.getElementById('clockDate');
+            const clockDay = document.getElementById('clockDay');
+            
+            if (clockTime) clockTime.textContent = timeString;
+            if (clockDate) clockDate.textContent = dateString;
+            if (clockDay) {
+                const hour = now.getHours();
+                const minute = now.getMinutes();
+                const beforeRenewal = hour < 12 || (hour === 12 && minute < 5);
+                const renewalStatus = beforeRenewal ? '🕐 Antes 12:05 PM' : '✅ Después 12:05 PM';
+                clockDay.textContent = `Día operacional: ${operationalDateFormatted} ${renewalStatus}`;
+            }
+        }
+        
+        function startSystemClock() {
+            updateSystemClock(); // Actualizar inmediatamente
+            setInterval(updateSystemClock, 1000); // Actualizar cada segundo
+        }
     </script>
+
 </body>
 </html>
