@@ -1776,11 +1776,31 @@
         function renderReporteDiario() {
             const container = document.getElementById('reportContent');
             
-            if (!dailyLogs[currentDate]) {
-                container.innerHTML = '<p>No hay datos para el día de hoy</p>';
-                return;
+            let fullHTML = '';
+            
+            // SECCIÓN 1: DÍA ACTUAL (En proceso)
+            fullHTML += renderDayReport(currentDate, true);
+            
+            // SECCIÓN 2: DÍA ANTERIOR (Cerrado)
+            const yesterday = new Date(currentDate);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (dailyLogs[yesterdayStr]) {
+                fullHTML += renderDayReport(yesterdayStr, false);
             }
-
+            
+            container.innerHTML = fullHTML;
+        }
+        
+        function renderDayReport(dateStr, isCurrentDay) {
+            if (!dailyLogs[dateStr]) {
+                return '';
+            }
+            
+            const statusLabel = isCurrentDay ? '🟢 En proceso' : '🔴 Cerrado';
+            const statusColor = isCurrentDay ? '#28a745' : '#dc3545';
+            
             let totalActivities = 0;
             let completedActivities = 0;
             let reportHTML = '';
@@ -1792,8 +1812,8 @@
                 sectionActivities.forEach(activity => {
                     if (activity.frequency === '2 veces al dia') {
                         totalActivities += 2;
-                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
-                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                        const dataMorning = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_manana`];
+                        const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
                             // Cuenta como completado si tiene CUALQUIER valor válido (incluso fuera de rango)
@@ -1804,9 +1824,9 @@
                                 completedActivities++;
                             }
                         } else {
-                            // Para chequeos, solo cuenta si está marcado como OK
-                            if (dataMorning && dataMorning.status === 'ok') completedActivities++;
-                            if (dataAfternoon && dataAfternoon.status === 'ok') completedActivities++;
+                            // Para chequeos, cuenta si está marcado OK o tiene nivel de aceite
+                            if (dataMorning && (dataMorning.status === 'ok' || dataMorning.oilLevel)) completedActivities++;
+                            if (dataAfternoon && (dataAfternoon.status === 'ok' || dataAfternoon.oilLevel)) completedActivities++;
                         }
                     }
                 });
@@ -1815,10 +1835,17 @@
             const percentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
             const pendingActivities = totalActivities - completedActivities;
 
-            // Mostrar estadísticas
+            // Encabezado con fecha y estado
             reportHTML = `
-                <div class="report-summary">
-                    <h3 style="color: #1e3c72; margin-bottom: 15px;">Reporte del día: ${new Date(currentDate).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
+                <div class="report-summary" style="border-left: 4px solid ${statusColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: #1e3c72; margin: 0;">
+                            ${new Date(dateStr).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
+                        </h3>
+                        <span style="background: ${statusColor}; color: white; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold;">
+                            ${statusLabel}
+                        </span>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-number">${totalActivities}</div>
@@ -1850,8 +1877,8 @@
                     
                     sectionActivities.forEach(activity => {
                         if (activity.frequency === '2 veces al dia') {
-                            const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
-                            const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                            const dataMorning = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_manana`];
+                            const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_tarde`];
                             
                             if (activity.type === 'parametros') {
                                 // Manejo de parámetros numéricos
@@ -1860,26 +1887,37 @@
                                     const userInfo = dataMorning.user || 'Usuario';
                                     const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                     
-                                    // Verificar si está fuera de rango
+                                    // Verificar si está fuera de rango (considerar min O max independientemente)
                                     const value = parseFloat(dataMorning.value);
-                                    const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                    const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
+                                                        (activity.max !== null && activity.max !== undefined && value > activity.max);
                                     const alertSymbol = isOutOfRange ? '⚠️ ' : '';
                                     const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
                                     
                                     sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
+                                    // Mostrar no realizada solo en día cerrado
+                                    sectionHasData = true;
+                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
                                 }
+                                
                                 if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
                                     sectionHasData = true;
                                     const userInfo = dataAfternoon.user || 'Usuario';
                                     const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                     
-                                    // Verificar si está fuera de rango
+                                    // Verificar si está fuera de rango (considerar min O max independientemente)
                                     const value = parseFloat(dataAfternoon.value);
-                                    const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                    const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
+                                                        (activity.max !== null && activity.max !== undefined && value > activity.max);
                                     const alertSymbol = isOutOfRange ? '⚠️ ' : '';
                                     const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
                                     
                                     sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
+                                    // Mostrar no realizada solo en día cerrado
+                                    sectionHasData = true;
+                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                 }
                             } else if (activity.type === 'chequeo') {
                                 // Verificar si es Nivel de Aceite
@@ -1902,7 +1940,11 @@
                                         const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
                                         
                                         sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
+                                        sectionHasData = true;
+                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
                                     }
+                                    
                                     if (dataAfternoon && dataAfternoon.oilLevel) {
                                         sectionHasData = true;
                                         const userInfo = dataAfternoon.user || 'Usuario';
@@ -1920,6 +1962,9 @@
                                         const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
                                         
                                         sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
+                                        sectionHasData = true;
+                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                     }
                                 } else {
                                     // Manejo de chequeos normales (OK/No OK)
@@ -1929,13 +1974,20 @@
                                         const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                         
                                         sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
+                                        sectionHasData = true;
+                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
                                     }
+                                    
                                     if (dataAfternoon && dataAfternoon.status === 'ok') {
                                         sectionHasData = true;
                                         const userInfo = dataAfternoon.user || 'Usuario';
                                         const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                                         
                                         sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                    } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
+                                        sectionHasData = true;
+                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
                                     }
                                 }
                             }
@@ -1952,22 +2004,22 @@
             });
 
             // Mostrar novedades
-            if (dailyLogs[currentDate].novedades && dailyLogs[currentDate].novedades.length > 0) {
+            if (dailyLogs[dateStr].novedades && dailyLogs[dateStr].novedades.length > 0) {
                 reportHTML += `<div class="report-summary"><h3>📝 Novedades</h3>`;
-                dailyLogs[currentDate].novedades.forEach((novedad, index) => {
+                dailyLogs[dateStr].novedades.forEach((novedad, index) => {
                     const photoIcon = novedad.photos && novedad.photos.length > 0 
-                        ? ` <span style="cursor: pointer; color: #667eea;" onclick="openPhotoCarousel(${index})">📷(${novedad.photos.length})</span>` 
+                        ? ` <span style="cursor: pointer; color: #667eea;" onclick="openPhotoCarouselForDate('${dateStr}', ${index})">📷(${novedad.photos.length})</span>` 
                         : '';
                     reportHTML += `<p>• ${novedad.text}${photoIcon} <small>(${novedad.user})</small></p>`;
                 });
                 reportHTML += `</div>`;
             }
 
-            container.innerHTML = reportHTML;
+            return reportHTML;
         }
-
-        function openPhotoCarousel(novedadIndex) {
-            const novedad = dailyLogs[currentDate].novedades[novedadIndex];
+        
+        function openPhotoCarouselForDate(dateStr, novedadIndex) {
+            const novedad = dailyLogs[dateStr].novedades[novedadIndex];
             if (!novedad || !novedad.photos || novedad.photos.length === 0) return;
             
             const modal = document.createElement('div');
@@ -2003,16 +2055,20 @@
             updatePhoto();
             
             if (novedad.photos.length > 1) {
-                document.getElementById('prevBtn').addEventListener('click', () => {
+                document.getElementById('prevBtn').onclick = () => {
                     currentPhotoIndex = (currentPhotoIndex - 1 + novedad.photos.length) % novedad.photos.length;
                     updatePhoto();
-                });
+                };
                 
-                document.getElementById('nextBtn').addEventListener('click', () => {
+                document.getElementById('nextBtn').onclick = () => {
                     currentPhotoIndex = (currentPhotoIndex + 1) % novedad.photos.length;
                     updatePhoto();
-                });
+                };
             }
+        }
+
+        function openPhotoCarousel(novedadIndex) {
+            openPhotoCarouselForDate(currentDate, novedadIndex);
         }
 
         function openHistorialPhotoCarousel(date, novedadIndex) {
@@ -2784,9 +2840,33 @@
             activities.push(newActivity);
             await activitiesRef.set(activities);
             
+            // CORRECCIÓN: Inicializar la nueva actividad en el dailyLog actual
+            if (!dailyLogs[currentDate].sections[section.id]) {
+                dailyLogs[currentDate].sections[section.id] = { activities: {} };
+            }
+            
+            if (frequency === '2 veces al dia') {
+                // Inicializar turnos mañana y tarde
+                dailyLogs[currentDate].sections[section.id].activities[`${newId}_manana`] = {
+                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                };
+                dailyLogs[currentDate].sections[section.id].activities[`${newId}_tarde`] = {
+                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                };
+            } else {
+                // Inicializar actividad única
+                dailyLogs[currentDate].sections[section.id].activities[newId] = {
+                    value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
+                };
+            }
+            
+            // Guardar en Firebase
+            await database.ref(`dailyLogs/${currentDate}`).set(dailyLogs[currentDate]);
+            
             showSyncIndicator('✓ Actividad agregada', 'synced');
             closeAddActivityModal();
             renderConfiguracion();
+            renderSections(); // Re-renderizar secciones para mostrar la nueva actividad
         }
         
         function renderNovedadesConfig(container) {
@@ -3112,11 +3192,7 @@
             if (clockTime) clockTime.textContent = timeString;
             if (clockDate) clockDate.textContent = dateString;
             if (clockDay) {
-                const hour = now.getHours();
-                const minute = now.getMinutes();
-                const beforeRenewal = hour < 12 || (hour === 12 && minute < 5);
-                const renewalStatus = beforeRenewal ? '🕐 Antes 12:05 PM' : '✅ Después 12:05 PM';
-                clockDay.textContent = `Día operacional: ${operationalDateFormatted} ${renewalStatus}`;
+                clockDay.textContent = `Día operacional: ${operationalDateFormatted}`;
             }
         }
         
