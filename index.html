@@ -1125,20 +1125,36 @@
                         const activityDataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            if (activityDataMorning && activityDataMorning.value !== null) completedFields++;
-                            if (activityDataAfternoon && activityDataAfternoon.value !== null) completedFields++;
+                            // Solo cuenta como completado si tiene valor Y está dentro del rango
+                            if (activityDataMorning && activityDataMorning.value !== null) {
+                                const value = parseFloat(activityDataMorning.value);
+                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
+                                if (inRange) completedFields++;
+                            }
+                            if (activityDataAfternoon && activityDataAfternoon.value !== null) {
+                                const value = parseFloat(activityDataAfternoon.value);
+                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
+                                if (inRange) completedFields++;
+                            }
                         } else {
-                            if (activityDataMorning && activityDataMorning.status !== null) completedFields++;
-                            if (activityDataAfternoon && activityDataAfternoon.status !== null) completedFields++;
+                            // Para chequeos, solo cuenta si está marcado como OK
+                            if (activityDataMorning && activityDataMorning.status === 'ok') completedFields++;
+                            if (activityDataAfternoon && activityDataAfternoon.status === 'ok') completedFields++;
                         }
                     } else if (activity.frequency === 'Diario') {
                         totalFields += 1;
                         const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
                         
                         if (activity.type === 'parametros') {
-                            if (activityData && activityData.value !== null) completedFields++;
+                            // Solo cuenta como completado si tiene valor Y está dentro del rango
+                            if (activityData && activityData.value !== null) {
+                                const value = parseFloat(activityData.value);
+                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
+                                if (inRange) completedFields++;
+                            }
                         } else {
-                            if (activityData && activityData.status !== null) completedFields++;
+                            // Para chequeos, solo cuenta si está marcado como OK
+                            if (activityData && activityData.status === 'ok') completedFields++;
                         }
                     }
                 });
@@ -1260,28 +1276,40 @@
             }
 
             const activityData = dailyLogs[currentDate].sections[currentSectionId].activities[activityKey];
-            const isCompleted = activityData.value !== null || activityData.status !== null;
             
             const fieldDiv = document.createElement('div');
-            fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
-            
             const turnoLabel = turno ? ` (${turno === 'manana' ? 'Mañana' : 'Tarde'})` : '';
             
             if (activity.type === 'parametros') {
                 const value = activityData.value || '';
-                const hasAlert = value && activity.min && activity.max && (value < activity.min || value > activity.max);
+                const hasValue = value !== '' && value !== null;
+                const hasAlert = hasValue && activity.min && activity.max && (parseFloat(value) < activity.min || parseFloat(value) > activity.max);
+                
+                // Determinar clase del campo: solo verde si está DENTRO del rango
+                let fieldClass = 'pending';
+                if (hasAlert) {
+                    fieldClass = 'pending'; // Fuera de rango = naranja (pendiente)
+                } else if (hasValue) {
+                    fieldClass = 'completed'; // Dentro del rango = verde
+                }
+                
+                fieldDiv.className = `activity-field ${fieldClass}`;
                 
                 fieldDiv.innerHTML = `
                     <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
                     <input type="number" step="0.1" id="activity_${activityKey}" 
                            value="${value}" 
-                           class="${hasAlert ? 'alert' : (isCompleted ? 'completed' : 'pending')}"
+                           class="${hasAlert ? 'alert' : (hasValue ? 'completed' : 'pending')}"
                            onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
                     ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
                     ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
                 `;
             } else {
                 const status = activityData.status || '';
+                const isCompleted = status === 'ok';
+                
+                fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
+                
                 fieldDiv.innerHTML = `
                     <label>${activity.name}${turnoLabel}:</label>
                     <div class="checkbox-group">
@@ -1294,6 +1322,14 @@
                         <label>Observaciones:</label>
                         <input type="text" id="activity_${activityKey}_obs" 
                                value="${activityData.observations || ''}"
+                               placeholder="Opcional"
+                               onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
+                    </div>
+                `;
+            }
+            
+            container.appendChild(fieldDiv);
+        }
                                placeholder="Opcional"
                                onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
                     </div>
@@ -1445,11 +1481,21 @@
                         const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            if (dataMorning && dataMorning.value !== null) completedActivities++;
-                            if (dataAfternoon && dataAfternoon.value !== null) completedActivities++;
+                            // Solo cuenta como completado si tiene valor Y está dentro del rango
+                            if (dataMorning && dataMorning.value !== null) {
+                                const value = parseFloat(dataMorning.value);
+                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
+                                if (inRange) completedActivities++;
+                            }
+                            if (dataAfternoon && dataAfternoon.value !== null) {
+                                const value = parseFloat(dataAfternoon.value);
+                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
+                                if (inRange) completedActivities++;
+                            }
                         } else {
-                            if (dataMorning && dataMorning.status !== null) completedActivities++;
-                            if (dataAfternoon && dataAfternoon.status !== null) completedActivities++;
+                            // Para chequeos, solo cuenta si está marcado como OK
+                            if (dataMorning && dataMorning.status === 'ok') completedActivities++;
+                            if (dataAfternoon && dataAfternoon.status === 'ok') completedActivities++;
                         }
                     }
                 });
