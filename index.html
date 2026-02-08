@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HSB APP - Sistema de Mantenimiento v3</title>
+    <title>HSB APP - Sistema de Mantenimiento v3.0 Completo</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -434,22 +434,6 @@
             color: #000;
         }
 
-        .config-section {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .config-section h3 {
-            color: #1e3c72;
-            margin-bottom: 15px;
-            font-size: 18px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -508,6 +492,40 @@
             display: none !important;
         }
 
+        .report-summary {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -542,7 +560,7 @@
     <!-- PANTALLA DE LOGIN -->
     <div id="loginScreen" class="login-container">
         <div class="login-header">
-            <h1>🧊 HSB APP v3.0</h1>
+            <h1>🧊 HSB APP v3.0 Complete</h1>
             <p>Sistema de Mantenimiento - Firebase Sync</p>
         </div>
         <form id="loginForm">
@@ -587,7 +605,7 @@
                     <button onclick="shareReport()" class="btn btn-secondary btn-small">📱 Compartir WhatsApp</button>
                 </div>
             </div>
-            <div id="reportContent">Cargando datos desde Firebase...</div>
+            <div id="reportContent"></div>
         </div>
 
         <!-- TAB: MANTENIMIENTO PREVENTIVO -->
@@ -597,7 +615,7 @@
                     <h2>🔧 Mantenimiento Preventivo</h2>
                     <button onclick="saveAllSections()" class="btn">💾 Guardar Todo</button>
                 </div>
-                <div id="sectionsContainer">Cargando secciones desde Firebase...</div>
+                <div id="sectionsContainer"></div>
             </div>
 
             <div id="sectionDetail" class="section-view">
@@ -616,7 +634,7 @@
                 <h2>📅 Plan de Mantenimiento</h2>
                 <p style="color: #666; font-size: 13px; margin-top: 5px;">Actividades periódicas que requieren aprobación</p>
             </div>
-            <div id="planContent">Cargando plan desde Firebase...</div>
+            <div id="planContent"></div>
         </div>
 
         <!-- TAB: HISTORIAL -->
@@ -624,13 +642,24 @@
             <div class="section-header">
                 <h2>📋 Historial</h2>
             </div>
-            <div id="historialContent">Cargando historial desde Firebase...</div>
+            <div id="historialContent"></div>
         </div>
 
         <!-- TAB: CONFIGURACIÓN -->
         <div id="tab-configuracion" class="tab-content">
             <h2 style="color: #1e3c72; margin-bottom: 20px;">⚙️ Panel de Configuración</h2>
-            <div id="configContent">Cargando configuración desde Firebase...</div>
+            <div id="configContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal para Novedades -->
+    <div id="novedadesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 Reportar Novedades</h2>
+                <span class="close" onclick="closeNovedadesModal()">&times;</span>
+            </div>
+            <div id="novedadesModalContent"></div>
         </div>
     </div>
 
@@ -653,7 +682,6 @@
         const database = firebase.database();
 
         console.log('🔥 Firebase initialized successfully!');
-        console.log('📡 Connected to:', firebaseConfig.databaseURL);
 
         // ==================== GLOBAL VARIABLES ====================
         
@@ -698,7 +726,7 @@
             }, 2000);
         }
 
-        // ==================== INITIALIZE DEFAULT DATA ====================
+        // ==================== DEFAULT DATA ====================
         
         const defaultUsers = [
             { 
@@ -769,33 +797,27 @@
             console.log('🔄 Initializing Firebase data...');
 
             try {
-                // Check if data exists
                 const usersSnapshot = await usersRef.once('value');
                 
                 if (!usersSnapshot.exists()) {
-                    console.log('📝 No data found, creating default data...');
-                    
-                    // Create default data
-                    await usersRef.set(defaultUsers);
-                    await tabsRef.set(defaultTabs);
-                    await sectionsRef.set(defaultSections);
-                    await activitiesRef.set(defaultActivities);
-                    await novedadesPredefinidasRef.set(defaultNovedades);
-                    await dailyLogsRef.set({});
-                    await planActivitiesRef.set([]);
-                    
-                    console.log('✅ Default data created successfully!');
-                } else {
-                    console.log('✅ Data already exists in Firebase');
+                    console.log('📝 Creating default data...');
+                    await Promise.all([
+                        usersRef.set(defaultUsers),
+                        tabsRef.set(defaultTabs),
+                        sectionsRef.set(defaultSections),
+                        activitiesRef.set(defaultActivities),
+                        novedadesPredefinidasRef.set(defaultNovedades),
+                        dailyLogsRef.set({}),
+                        planActivitiesRef.set([])
+                    ]);
+                    console.log('✅ Default data created!');
                 }
 
-                // Load data into cache
                 await loadDataFromFirebase();
-                
                 hideLoading();
                 showSyncIndicator('✓ Sincronizado', 'synced');
             } catch (error) {
-                console.error('❌ Error initializing Firebase data:', error);
+                console.error('❌ Error initializing Firebase:', error);
                 hideLoading();
                 alert('Error al inicializar Firebase: ' + error.message);
             }
@@ -824,10 +846,6 @@
                 planActivities = planSnap.val() || [];
 
                 console.log('✅ Data loaded successfully!');
-                console.log('👥 Users:', users.length);
-                console.log('📑 Tabs:', tabs.length);
-                console.log('📂 Sections:', sections.length);
-                console.log('🔧 Activities:', activities.length);
             } catch (error) {
                 console.error('❌ Error loading data:', error);
             }
@@ -838,30 +856,18 @@
         function setupRealTimeSync() {
             console.log('🔄 Setting up real-time sync...');
 
-            usersRef.on('value', (snapshot) => {
-                users = snapshot.val() || [];
-                console.log('🔄 Users updated');
-            });
-
-            tabsRef.on('value', (snapshot) => {
-                tabs = snapshot.val() || [];
-                console.log('🔄 Tabs updated');
-                if (currentUser) renderTabs();
-            });
-
-            sectionsRef.on('value', (snapshot) => {
-                sections = snapshot.val() || [];
-                console.log('🔄 Sections updated');
-            });
-
-            activitiesRef.on('value', (snapshot) => {
-                activities = snapshot.val() || [];
-                console.log('🔄 Activities updated');
-            });
-
             dailyLogsRef.on('value', (snapshot) => {
                 dailyLogs = snapshot.val() || {};
                 console.log('🔄 Daily logs updated');
+                
+                // Re-render current view if needed
+                if (document.getElementById('tab-mantenimiento-preventivo').classList.contains('active')) {
+                    const detailActive = document.getElementById('sectionDetail').classList.contains('active');
+                    if (!detailActive) {
+                        renderSections();
+                    }
+                }
+                
                 showSyncIndicator('✓ Datos actualizados', 'synced');
             });
 
@@ -909,7 +915,7 @@
             initializeDailyLog();
         }
 
-        // ==================== TABS RENDERING ====================
+        // ==================== TABS ====================
         
         function renderTabs() {
             const tabsContainer = document.getElementById('mainTabs');
@@ -963,7 +969,7 @@
             }
         }
 
-        // ==================== DAILY LOG INITIALIZATION ====================
+        // ==================== DAILY LOG ====================
         
         async function initializeDailyLog() {
             if (!dailyLogs[currentDate]) {
@@ -998,52 +1004,511 @@
                     });
                 });
                 
-                // Save to Firebase
                 await dailyLogsRef.child(currentDate).set(newLog);
                 dailyLogs[currentDate] = newLog;
-                
-                console.log('✅ Daily log created and saved to Firebase');
+                console.log('✅ Daily log created!');
             }
         }
 
-        // ==================== PLACEHOLDER FUNCTIONS ====================
+        // ==================== RENDER SECTIONS ====================
         
         function renderSections() {
-            document.getElementById('sectionsContainer').innerHTML = '<p>Firebase conectado. Secciones funcionando.</p>';
+            console.log('=== RENDERING SECTIONS ===');
+            
+            const container = document.getElementById('sectionsContainer');
+            if (!container) {
+                console.error('Container not found!');
+                return;
+            }
+
+            container.innerHTML = '';
+
+            if (!dailyLogs[currentDate]) {
+                console.error('No daily log for current date!');
+                container.innerHTML = '<p>Inicializando datos...</p>';
+                return;
+            }
+
+            sections.forEach(section => {
+                let totalFields = 0;
+                let completedFields = 0;
+
+                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        totalFields += 2;
+                        const activityDataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
+                        const activityDataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                        
+                        if (activity.type === 'parametros') {
+                            if (activityDataMorning && activityDataMorning.value !== null) completedFields++;
+                            if (activityDataAfternoon && activityDataAfternoon.value !== null) completedFields++;
+                        } else {
+                            if (activityDataMorning && activityDataMorning.status !== null) completedFields++;
+                            if (activityDataAfternoon && activityDataAfternoon.status !== null) completedFields++;
+                        }
+                    } else if (activity.frequency === 'Diario') {
+                        totalFields += 1;
+                        const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
+                        
+                        if (activity.type === 'parametros') {
+                            if (activityData && activityData.value !== null) completedFields++;
+                        } else {
+                            if (activityData && activityData.status !== null) completedFields++;
+                        }
+                    }
+                });
+                
+                const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+                
+                const sectionCard = document.createElement('div');
+                sectionCard.className = 'section-card';
+                sectionCard.onclick = () => showSectionDetail(section.id);
+                sectionCard.innerHTML = `
+                    <div class="section-info">
+                        <h3>${section.icon} ${section.name}</h3>
+                        <div class="section-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="progress-text">${percentage}% (${completedFields}/${totalFields})</div>
+                        </div>
+                    </div>
+                    <div class="section-icon">${section.icon}</div>
+                `;
+                container.appendChild(sectionCard);
+            });
+
+            // Sección de Novedades
+            const novedadesCount = (dailyLogs[currentDate] && dailyLogs[currentDate].novedades) ? dailyLogs[currentDate].novedades.length : 0;
+            const novedadesCard = document.createElement('div');
+            novedadesCard.className = 'section-card';
+            novedadesCard.onclick = () => openReportNovedadModal();
+            novedadesCard.innerHTML = `
+                <div class="section-info">
+                    <h3>📝 Novedades</h3>
+                    <p style="font-size: 13px; color: #666; margin-top: 5px;">${novedadesCount} novedad(es) reportada(s)</p>
+                </div>
+                <div class="section-icon">📝</div>
+            `;
+            container.appendChild(novedadesCard);
+            
+            console.log('=== SECTIONS RENDERED ===');
         }
 
-        function renderPlan() {
-            document.getElementById('planContent').innerHTML = '<p>Firebase conectado. Plan funcionando.</p>';
+        function showSectionDetail(sectionId) {
+            console.log('=== SHOWING SECTION DETAIL ===', sectionId);
+            
+            currentSectionId = sectionId;
+            const section = sections.find(s => s.id === sectionId);
+            
+            if (!section) {
+                console.error('Section not found!');
+                return;
+            }
+            
+            document.getElementById('sectionsList').style.display = 'none';
+            document.getElementById('sectionDetail').classList.add('active');
+            document.getElementById('sectionDetailTitle').textContent = `${section.icon} ${section.name}`;
+            
+            const content = document.getElementById('sectionDetailContent');
+            content.innerHTML = '';
+            
+            const sectionActivities = activities
+                .filter(a => a.sectionId === sectionId && (a.frequency === '2 veces al dia' || a.frequency === 'Diario'))
+                .sort((a, b) => a.order - b.order);
+            
+            console.log('Section activities:', sectionActivities.length);
+            
+            if (sectionActivities.length === 0) {
+                content.innerHTML = '<p style="padding: 20px; color: #666;">No hay actividades configuradas</p>';
+            } else {
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        renderActivityField(content, activity, 'manana');
+                        renderActivityField(content, activity, 'tarde');
+                    } else {
+                        renderActivityField(content, activity);
+                    }
+                });
+            }
+
+            // Fotos de la sección
+            const photosDiv = document.createElement('div');
+            photosDiv.className = 'form-group';
+            photosDiv.innerHTML = `
+                <label>📸 Fotos de esta Sección (Opcional):</label>
+                <input type="file" id="sectionPhotos_${sectionId}" multiple accept="image/*" style="display: none;">
+                <div class="photo-upload" onclick="document.getElementById('sectionPhotos_${sectionId}').click()">
+                    <p>📷 Haz clic para agregar fotos</p>
+                </div>
+                <div id="sectionPhotosPreview_${sectionId}" class="photo-preview"></div>
+            `;
+            content.appendChild(photosDiv);
+
+            document.getElementById(`sectionPhotos_${sectionId}`).addEventListener('change', function(e) {
+                const preview = document.getElementById(`sectionPhotosPreview_${sectionId}`);
+                preview.innerHTML = '';
+                for (let file of e.target.files) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         }
 
-        function renderReporteDiario() {
-            document.getElementById('reportContent').innerHTML = '<p>Firebase conectado. Reporte funcionando.</p>';
+        function renderActivityField(container, activity, turno = null) {
+            if (!dailyLogs[currentDate] || !dailyLogs[currentDate].sections[currentSectionId]) {
+                console.error('Data not initialized!');
+                return;
+            }
+
+            const activityKey = turno ? `${activity.id}_${turno}` : activity.id;
+            
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities[activityKey]) {
+                dailyLogs[currentDate].sections[currentSectionId].activities[activityKey] = {
+                    value: null, status: null, observations: '', photos: [], user: null, timestamp: null
+                };
+            }
+
+            const activityData = dailyLogs[currentDate].sections[currentSectionId].activities[activityKey];
+            const isCompleted = activityData.value !== null || activityData.status !== null;
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
+            
+            const turnoLabel = turno ? ` (${turno === 'manana' ? 'Mañana' : 'Tarde'})` : '';
+            
+            if (activity.type === 'parametros') {
+                const value = activityData.value || '';
+                const hasAlert = value && activity.min && activity.max && (value < activity.min || value > activity.max);
+                
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
+                    <input type="number" step="0.1" id="activity_${activityKey}" 
+                           value="${value}" 
+                           class="${hasAlert ? 'alert' : (isCompleted ? 'completed' : 'pending')}"
+                           onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
+                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
+                    ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
+                `;
+            } else {
+                const status = activityData.status || '';
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel}:</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="activity_${activityKey}_ok" 
+                               ${status === 'ok' ? 'checked' : ''}
+                               onchange="updateActivityStatus(${activity.id}, '${turno || ''}', 'ok', this.checked)">
+                        <label for="activity_${activityKey}_ok">✓ OK</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones:</label>
+                        <input type="text" id="activity_${activityKey}_obs" 
+                               value="${activityData.observations || ''}"
+                               placeholder="Opcional"
+                               onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
+                    </div>
+                `;
+            }
+            
+            container.appendChild(fieldDiv);
         }
 
-        function renderHistorial() {
-            document.getElementById('historialContent').innerHTML = '<p>Firebase conectado. Historial funcionando.</p>';
+        async function updateActivityValue(activityId, turno, value) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            const path = `dailyLogs/${currentDate}/sections/${currentSectionId}/activities/${activityKey}`;
+            
+            await database.ref(path).update({
+                value: parseFloat(value),
+                user: currentUser.fullName,
+                timestamp: new Date().toISOString()
+            });
+            
+            showSyncIndicator('💾 Guardando...', 'syncing');
         }
 
-        function renderConfiguracion() {
-            document.getElementById('configContent').innerHTML = '<p>Firebase conectado. Configuración funcionando.</p>';
+        async function updateActivityStatus(activityId, turno, status, checked) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            const path = `dailyLogs/${currentDate}/sections/${currentSectionId}/activities/${activityKey}`;
+            
+            await database.ref(path).update({
+                status: checked ? status : null,
+                user: currentUser.fullName,
+                timestamp: new Date().toISOString()
+            });
+            
+            showSyncIndicator('💾 Guardando...', 'syncing');
+        }
+
+        async function updateActivityObservations(activityId, turno, observations) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            const path = `dailyLogs/${currentDate}/sections/${currentSectionId}/activities/${activityKey}`;
+            
+            await database.ref(path).update({
+                observations: observations
+            });
+            
+            showSyncIndicator('💾 Guardando...', 'syncing');
         }
 
         function backToSectionsList() {
             document.getElementById('sectionDetail').classList.remove('active');
             document.getElementById('sectionsList').style.display = 'block';
+            renderSections();
         }
 
         function saveAllSections() {
-            alert('Guardando en Firebase...');
+            showSyncIndicator('✓ Todo guardado en Firebase', 'synced');
         }
 
         function saveSectionAndReturn() {
-            alert('Guardando en Firebase...');
+            showSyncIndicator('✓ Sección guardada', 'synced');
             backToSectionsList();
         }
 
+        // ==================== NOVEDADES ====================
+        
+        function openReportNovedadModal() {
+            const modal = document.getElementById('novedadesModal');
+            const content = document.getElementById('novedadesModalContent');
+            
+            content.innerHTML = `
+                <div class="form-group">
+                    <label>Novedades Predefinidas:</label>
+                    ${novedadesPredefinidas.map(n => `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="novedad_${n.id}" value="${n.text}">
+                            <label for="novedad_${n.id}">${n.text}</label>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="form-group">
+                    <label>Otra Novedad (personalizada):</label>
+                    <textarea id="customNovedad" rows="3" placeholder="Escribe aquí..."></textarea>
+                </div>
+                <button onclick="saveNovedad()" class="btn">💾 Guardar Novedad</button>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeNovedadesModal() {
+            document.getElementById('novedadesModal').style.display = 'none';
+        }
+
+        async function saveNovedad() {
+            const selectedNovedades = [];
+            
+            novedadesPredefinidas.forEach(n => {
+                const checkbox = document.getElementById(`novedad_${n.id}`);
+                if (checkbox && checkbox.checked) {
+                    selectedNovedades.push(n.text);
+                }
+            });
+            
+            const customNovedad = document.getElementById('customNovedad').value.trim();
+            if (customNovedad) {
+                selectedNovedades.push(customNovedad);
+            }
+            
+            if (selectedNovedades.length > 0) {
+                const currentNovedades = dailyLogs[currentDate].novedades || [];
+                const newNovedad = {
+                    text: selectedNovedades.join(', '),
+                    user: currentUser.fullName,
+                    timestamp: new Date().toISOString()
+                };
+                
+                currentNovedades.push(newNovedad);
+                
+                await database.ref(`dailyLogs/${currentDate}/novedades`).set(currentNovedades);
+                
+                showSyncIndicator('✓ Novedad guardada', 'synced');
+                closeNovedadesModal();
+                renderSections();
+            } else {
+                alert('Por favor selecciona o escribe al menos una novedad');
+            }
+        }
+
+        // ==================== REPORTE DIARIO ====================
+        
+        function renderReporteDiario() {
+            const container = document.getElementById('reportContent');
+            
+            if (!dailyLogs[currentDate]) {
+                container.innerHTML = '<p>No hay datos para el día de hoy</p>';
+                return;
+            }
+
+            let totalActivities = 0;
+            let completedActivities = 0;
+            let reportHTML = '';
+
+            // Calcular estadísticas
+            sections.forEach(section => {
+                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        totalActivities += 2;
+                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
+                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                        
+                        if (activity.type === 'parametros') {
+                            if (dataMorning && dataMorning.value !== null) completedActivities++;
+                            if (dataAfternoon && dataAfternoon.value !== null) completedActivities++;
+                        } else {
+                            if (dataMorning && dataMorning.status !== null) completedActivities++;
+                            if (dataAfternoon && dataAfternoon.status !== null) completedActivities++;
+                        }
+                    }
+                });
+            });
+
+            const percentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+            const pendingActivities = totalActivities - completedActivities;
+
+            // Mostrar estadísticas
+            reportHTML = `
+                <div class="report-summary">
+                    <h3 style="color: #1e3c72; margin-bottom: 15px;">Reporte del día: ${new Date(currentDate).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">${totalActivities}</div>
+                            <div class="stat-label">Total Actividades</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${completedActivities}</div>
+                            <div class="stat-label">Completadas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${pendingActivities}</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${percentage}%</div>
+                            <div class="stat-label">Porcentaje</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Mostrar detalles por sección
+            sections.forEach(section => {
+                const sectionActivities = activities.filter(a => a.sectionId === section.id && a.showInSummary === 'detalle');
+                
+                if (sectionActivities.length > 0) {
+                    reportHTML += `<div class="report-summary"><h3>${section.icon} ${section.name}</h3>`;
+                    
+                    sectionActivities.forEach(activity => {
+                        if (activity.frequency === '2 veces al dia') {
+                            const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
+                            const dataAfternoon = dailyLogs[currentDate].sections[section.id}.activities[`${activity.id}_tarde`];
+                            
+                            if (dataMorning && dataMorning.value !== null) {
+                                reportHTML += `<p><strong>${activity.name} (Mañana):</strong> ${dataMorning.value} ${activity.unit} <small>(${dataMorning.user} - ${new Date(dataMorning.timestamp).toLocaleTimeString('es-ES')})</small></p>`;
+                            }
+                            if (dataAfternoon && dataAfternoon.value !== null) {
+                                reportHTML += `<p><strong>${activity.name} (Tarde):</strong> ${dataAfternoon.value} ${activity.unit} <small>(${dataAfternoon.user} - ${new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES')})</small></p>`;
+                            }
+                        }
+                    });
+                    
+                    reportHTML += `</div>`;
+                }
+            });
+
+            // Mostrar novedades
+            if (dailyLogs[currentDate].novedades && dailyLogs[currentDate].novedades.length > 0) {
+                reportHTML += `<div class="report-summary"><h3>📝 Novedades</h3>`;
+                dailyLogs[currentDate].novedades.forEach(novedad => {
+                    reportHTML += `<p>• ${novedad.text} <small>(${novedad.user})</small></p>`;
+                });
+                reportHTML += `</div>`;
+            }
+
+            container.innerHTML = reportHTML;
+        }
+
         function shareReport() {
-            alert('Compartir reporte por WhatsApp');
+            const message = `Reporte HSB - ${new Date(currentDate).toLocaleDateString('es-ES')}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // ==================== PLAN ====================
+        
+        function renderPlan() {
+            const container = document.getElementById('planContent');
+            container.innerHTML = `
+                <div class="report-summary">
+                    <p style="color: #666;">No hay actividades periódicas configuradas</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 10px;">Las actividades semanales, mensuales y trimestrales aparecerán aquí para aprobación.</p>
+                </div>
+            `;
+        }
+
+        // ==================== HISTORIAL ====================
+        
+        function renderHistorial() {
+            const container = document.getElementById('historialContent');
+            
+            const dates = Object.keys(dailyLogs).sort().reverse();
+            
+            if (dates.length === 0) {
+                container.innerHTML = '<p>No hay historial disponible</p>';
+                return;
+            }
+
+            let html = '';
+            
+            dates.forEach(date => {
+                const log = dailyLogs[date];
+                let completed = 0;
+                let total = 0;
+
+                sections.forEach(section => {
+                    if (log.sections && log.sections[section.id]) {
+                        Object.values(log.sections[section.id].activities || {}).forEach(activity => {
+                            total++;
+                            if (activity.value !== null || activity.status !== null) {
+                                completed++;
+                            }
+                        });
+                    }
+                });
+
+                const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                html += `
+                    <div class="report-summary" style="margin-bottom: 15px;">
+                        <h3 style="color: #1e3c72;">📅 ${new Date(date).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
+                        <p>Completado: ${percentage}% (${completed}/${total})</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ==================== CONFIGURACIÓN ====================
+        
+        function renderConfiguracion() {
+            const container = document.getElementById('configContent');
+            container.innerHTML = `
+                <div class="report-summary">
+                    <h3 style="color: #1e3c72;">🔧 Panel de Configuración</h3>
+                    <p>Gestión de usuarios, secciones, actividades y novedades.</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 10px;">Panel de configuración completo disponible próximamente.</p>
+                </div>
+            `;
         }
 
         // ==================== INITIALIZE APP ====================
@@ -1051,13 +1516,9 @@
         window.addEventListener('load', async function() {
             console.log('🚀 App starting...');
             
-            // Initialize Firebase data
             await initializeFirebaseData();
-            
-            // Setup real-time sync
             setupRealTimeSync();
             
-            // Check for saved session
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
                 const savedUserData = JSON.parse(savedUser);
