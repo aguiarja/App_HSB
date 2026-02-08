@@ -1297,7 +1297,8 @@
                     <input type="number" step="0.1" id="activity_${activityKey}" 
                            value="${hasValue ? value : ''}" 
                            class="${hasValue ? 'completed' : 'pending'}"
-                           onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
+                           onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)"
+                           onkeypress="handleEnterKey(event, 'activity_${activityKey}')">
                     ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
                     ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
                 `;
@@ -1382,6 +1383,29 @@
             });
             
             showSyncIndicator('💾 Guardando...', 'syncing');
+        }
+
+        function handleEnterKey(event, currentFieldId) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                event.preventDefault();
+                
+                // Buscar todos los campos de input numéricos en el contenedor
+                const allInputs = Array.from(document.querySelectorAll('#sectionDetailContent input[type="number"]'));
+                
+                // Encontrar el índice del campo actual
+                const currentIndex = allInputs.findIndex(input => input.id === currentFieldId);
+                
+                // Si encontramos el campo actual y hay un siguiente
+                if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
+                    const nextInput = allInputs[currentIndex + 1];
+                    
+                    // Dar tiempo para que se guarde el valor actual
+                    setTimeout(() => {
+                        nextInput.focus();
+                        nextInput.select(); // Selecciona el contenido para facilitar sobrescritura
+                    }, 100);
+                }
+            }
         }
 
         function backToSectionsList() {
@@ -1546,18 +1570,50 @@
                             const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
                             const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                             
-                            // Solo mostrar si tiene valor válido
-                            if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
-                                sectionHasData = true;
-                                const userInfo = dataMorning.user || 'Usuario';
-                                const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                            }
-                            if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
-                                sectionHasData = true;
-                                const userInfo = dataAfternoon.user || 'Usuario';
-                                const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                            if (activity.type === 'parametros') {
+                                // Manejo de parámetros numéricos
+                                if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
+                                    sectionHasData = true;
+                                    const userInfo = dataMorning.user || 'Usuario';
+                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                    
+                                    // Verificar si está fuera de rango
+                                    const value = parseFloat(dataMorning.value);
+                                    const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                    const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                    const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                                    
+                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                }
+                                if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
+                                    sectionHasData = true;
+                                    const userInfo = dataAfternoon.user || 'Usuario';
+                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                    
+                                    // Verificar si está fuera de rango
+                                    const value = parseFloat(dataAfternoon.value);
+                                    const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                    const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                    const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                                    
+                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                }
+                            } else if (activity.type === 'chequeo') {
+                                // Manejo de chequeos (OK/No OK)
+                                if (dataMorning && dataMorning.status === 'ok') {
+                                    sectionHasData = true;
+                                    const userInfo = dataMorning.user || 'Usuario';
+                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                    
+                                    sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                }
+                                if (dataAfternoon && dataAfternoon.status === 'ok') {
+                                    sectionHasData = true;
+                                    const userInfo = dataAfternoon.user || 'Usuario';
+                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                    
+                                    sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                }
                             }
                         }
                     });
@@ -1770,15 +1826,46 @@
                                 const dataMorning = log.sections[section.id].activities[`${activity.id}_manana`];
                                 const dataAfternoon = log.sections[section.id].activities[`${activity.id}_tarde`];
                                 
-                                if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined) {
-                                    const userInfo = dataMorning.user || 'Usuario';
-                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Mañana):</strong> ${dataMorning.value} ${activity.unit || ''} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
-                                }
-                                if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined) {
-                                    const userInfo = dataAfternoon.user || 'Usuario';
-                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Tarde):</strong> ${dataAfternoon.value} ${activity.unit || ''} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                if (activity.type === 'parametros') {
+                                    // Manejo de parámetros numéricos
+                                    if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined) {
+                                        const userInfo = dataMorning.user || 'Usuario';
+                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        // Verificar si está fuera de rango
+                                        const value = parseFloat(dataMorning.value);
+                                        const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                        const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                        const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                                        
+                                        detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                    }
+                                    if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined) {
+                                        const userInfo = dataAfternoon.user || 'Usuario';
+                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        // Verificar si está fuera de rango
+                                        const value = parseFloat(dataAfternoon.value);
+                                        const isOutOfRange = activity.min && activity.max && (value < activity.min || value > activity.max);
+                                        const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                        const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                                        
+                                        detailHTML += `<p style="margin: 5px 0; ${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                    }
+                                } else if (activity.type === 'chequeo') {
+                                    // Manejo de chequeos (OK/No OK)
+                                    if (dataMorning && dataMorning.status === 'ok') {
+                                        const userInfo = dataMorning.user || 'Usuario';
+                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Mañana):</strong> ✓ OK <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                    }
+                                    if (dataAfternoon && dataAfternoon.status === 'ok') {
+                                        const userInfo = dataAfternoon.user || 'Usuario';
+                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                        
+                                        detailHTML += `<p style="margin: 5px 0;"><strong>${activity.name} (Tarde):</strong> ✓ OK <small style="color: #999;">(${userInfo} - ${timeInfo})</small></p>`;
+                                    }
                                 }
                             }
                         });
