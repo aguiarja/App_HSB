@@ -1132,13 +1132,13 @@
                         const activityDataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor Y está dentro del rango
-                            if (activityDataMorning && activityDataMorning.value !== null && activityDataMorning.value !== '') {
+                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            if (activityDataMorning && activityDataMorning.value !== null && activityDataMorning.value !== undefined && activityDataMorning.value !== '' && !isNaN(activityDataMorning.value)) {
                                 const value = parseFloat(activityDataMorning.value);
                                 const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
                                 if (inRange) completedFields++;
                             }
-                            if (activityDataAfternoon && activityDataAfternoon.value !== null && activityDataAfternoon.value !== '') {
+                            if (activityDataAfternoon && activityDataAfternoon.value !== null && activityDataAfternoon.value !== undefined && activityDataAfternoon.value !== '' && !isNaN(activityDataAfternoon.value)) {
                                 const value = parseFloat(activityDataAfternoon.value);
                                 const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
                                 if (inRange) completedFields++;
@@ -1153,8 +1153,8 @@
                         const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor Y está dentro del rango
-                            if (activityData && activityData.value !== null && activityData.value !== '') {
+                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            if (activityData && activityData.value !== null && activityData.value !== undefined && activityData.value !== '' && !isNaN(activityData.value)) {
                                 const value = parseFloat(activityData.value);
                                 const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
                                 if (inRange) completedFields++;
@@ -1289,7 +1289,8 @@
             
             if (activity.type === 'parametros') {
                 const value = activityData.value;
-                const hasValue = value !== null && value !== '';
+                // Verificar que tenga valor válido (no null, no undefined, no NaN, no string vacío)
+                const hasValue = value !== null && value !== undefined && value !== '' && !isNaN(value);
                 const hasAlert = hasValue && activity.min && activity.max && (parseFloat(value) < activity.min || parseFloat(value) > activity.max);
                 
                 // Determinar clase del campo: solo verde si está DENTRO del rango
@@ -1303,7 +1304,7 @@
                 fieldDiv.innerHTML = `
                     <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
                     <input type="number" step="0.1" id="activity_${activityKey}" 
-                           value="${value !== null ? value : ''}" 
+                           value="${hasValue ? value : ''}" 
                            class="${hasAlert ? 'alert' : (hasValue ? 'completed' : 'pending')}"
                            onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
                     ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
@@ -1340,13 +1341,24 @@
             const activityKey = turno ? `${activityId}_${turno}` : activityId;
             const path = `dailyLogs/${currentDate}/sections/${currentSectionId}/activities/${activityKey}`;
             
+            // Si el campo está vacío, guardar null explícitamente
+            const numValue = value === '' || value === null || value === undefined ? null : parseFloat(value);
+            
             await database.ref(path).update({
-                value: parseFloat(value),
-                user: currentUser.fullName,
-                timestamp: new Date().toISOString()
+                value: numValue,
+                user: numValue !== null ? currentUser.fullName : null,
+                timestamp: numValue !== null ? new Date().toISOString() : null
             });
             
             showSyncIndicator('💾 Guardando...', 'syncing');
+            
+            // Re-renderizar tanto secciones como la vista detallada para actualizar colores
+            setTimeout(() => {
+                renderSections();
+                if (currentSectionId) {
+                    showSectionDetail(currentSectionId);
+                }
+            }, 300);
         }
 
         async function updateActivityStatus(activityId, turno, status, checked) {
@@ -1360,6 +1372,14 @@
             });
             
             showSyncIndicator('💾 Guardando...', 'syncing');
+            
+            // Re-renderizar tanto secciones como la vista detallada para actualizar colores
+            setTimeout(() => {
+                renderSections();
+                if (currentSectionId) {
+                    showSectionDetail(currentSectionId);
+                }
+            }, 300);
         }
 
         async function updateActivityObservations(activityId, turno, observations) {
@@ -1478,13 +1498,13 @@
                         const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor Y está dentro del rango
-                            if (dataMorning && dataMorning.value !== null && dataMorning.value !== '') {
+                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
                                 const value = parseFloat(dataMorning.value);
                                 const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
                                 if (inRange) completedActivities++;
                             }
-                            if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== '') {
+                            if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
                                 const value = parseFloat(dataAfternoon.value);
                                 const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
                                 if (inRange) completedActivities++;
@@ -1531,28 +1551,36 @@
                 const sectionActivities = activities.filter(a => a.sectionId === section.id && a.showInSummary === 'detalle');
                 
                 if (sectionActivities.length > 0) {
-                    reportHTML += `<div class="report-summary"><h3>${section.icon} ${section.name}</h3>`;
+                    let sectionHasData = false;
+                    let sectionHTML = '';
                     
                     sectionActivities.forEach(activity => {
                         if (activity.frequency === '2 veces al dia') {
                             const dataMorning = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
                             const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                             
-                            // Solo mostrar si tiene valor
-                            if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined) {
-                                const userInfo = dataMorning.user ? dataMorning.user : 'Usuario';
+                            // Solo mostrar si tiene valor válido
+                            if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
+                                sectionHasData = true;
+                                const userInfo = dataMorning.user || 'Usuario';
                                 const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                reportHTML += `<p><strong>${activity.name} (Mañana):</strong> ${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                             }
-                            if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined) {
-                                const userInfo = dataAfternoon.user ? dataAfternoon.user : 'Usuario';
+                            if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
+                                sectionHasData = true;
+                                const userInfo = dataAfternoon.user || 'Usuario';
                                 const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                reportHTML += `<p><strong>${activity.name} (Tarde):</strong> ${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
+                                sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small>(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
                             }
                         }
                     });
                     
-                    reportHTML += `</div>`;
+                    // Solo agregar la sección si tiene datos
+                    if (sectionHasData) {
+                        reportHTML += `<div class="report-summary"><h3>${section.icon} ${section.name}</h3>`;
+                        reportHTML += sectionHTML;
+                        reportHTML += `</div>`;
+                    }
                 }
             });
 
