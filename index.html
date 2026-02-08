@@ -632,7 +632,7 @@
             <div id="sectionsList" class="section-list">
                 <div class="section-header">
                     <h2>🔧 Mantenimiento Preventivo</h2>
-                    <button onclick="saveAllSections()" class="btn">💾 Guardar Todo</button>
+                    <div id="currentDateDisplay" style="font-size: 16px; color: #667eea; font-weight: bold; margin-top: 5px;"></div>
                 </div>
                 <div id="sectionsContainer"></div>
             </div>
@@ -679,6 +679,78 @@
                 <span class="close" onclick="closeNovedadesModal()">&times;</span>
             </div>
             <div id="novedadesModalContent"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: AGREGAR ACTIVIDAD -->
+    <div id="addActivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Agregar Nueva Actividad</h2>
+                <span class="close" onclick="closeAddActivityModal()">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>Sección:</label>
+                    <select id="activitySection" style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        <option value="">-- Seleccionar --</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Nombre de la Actividad:</label>
+                    <input type="text" id="activityName" placeholder="Ej: Vibración Motor" 
+                           style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Tipo de Registro:</label>
+                    <select id="activityType" onchange="toggleActivityFields()" 
+                            style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="parametros">Parámetros (valores numéricos)</option>
+                        <option value="chequeo">Chequeo (OK/No OK)</option>
+                    </select>
+                </div>
+                
+                <div id="parametrosFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Unidad:</label>
+                        <input type="text" id="activityUnit" placeholder="Ej: PSI, °C, %, A" 
+                               style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Valor Mínimo:</label>
+                            <input type="number" step="0.1" id="activityMin" placeholder="Ej: 50" 
+                                   style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        </div>
+                        
+                        <div class="form-group" style="flex: 1;">
+                            <label>Valor Máximo:</label>
+                            <input type="number" step="0.1" id="activityMax" placeholder="Ej: 100" 
+                                   style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Frecuencia:</label>
+                    <select id="activityFrequency" style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="2 veces al dia">2 veces al día</option>
+                        <option value="Diario">Diario</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="mensual">Mensual</option>
+                        <option value="trimestral">Trimestral</option>
+                    </select>
+                </div>
+                
+                <button onclick="saveNewActivity()" class="btn" style="width: 100%; margin-top: 15px;">
+                    ✓ Guardar Actividad
+                </button>
+            </div>
         </div>
     </div>
 
@@ -751,9 +823,9 @@
             const hour = now.getHours();
             const minutes = now.getMinutes();
             
-            // Si son antes de las 12:05 PM, usar el día anterior
-            // 12:05 PM = 12 horas y 5 minutos
-            if (hour < 12 || (hour === 12 && minutes < 5)) {
+            // Si son antes de las 12:15 PM, usar el día anterior
+            // 12:15 PM = 12 horas y 15 minutos
+            if (hour < 12 || (hour === 12 && minutes < 15)) {
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
                 return yesterday.toISOString().split('T')[0];
@@ -1135,6 +1207,19 @@
             }
 
             container.innerHTML = '';
+            
+            // Actualizar fecha operacional
+            const dateDisplay = document.getElementById('currentDateDisplay');
+            if (dateDisplay) {
+                const dateObj = new Date(currentDate + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('es-ES', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                dateDisplay.textContent = `📅 ${formattedDate}`;
+            }
 
             if (!dailyLogs[currentDate]) {
                 console.error('No daily log for current date!');
@@ -1513,10 +1598,6 @@
             document.getElementById('sectionDetail').classList.remove('active');
             document.getElementById('sectionsList').style.display = 'block';
             renderSections();
-        }
-
-        function saveAllSections() {
-            showSyncIndicator('✓ Todo guardado en Firebase', 'synced');
         }
 
         function saveSectionAndReturn() {
@@ -2600,36 +2681,77 @@
             container.innerHTML = html;
         }
         
-        async function promptAddActivity() {
-            // Seleccionar sección
-            const sectionId = prompt('ID de la sección (1=Parámetros, 2=MYCOM, 3=VILTER, etc.):');
-            if (!sectionId) return;
+        function promptAddActivity() {
+            // Abrir modal
+            const modal = document.getElementById('addActivityModal');
+            modal.style.display = 'block';
             
-            const section = sections.find(s => s.id === parseInt(sectionId));
+            // Llenar selector de secciones
+            const sectionSelect = document.getElementById('activitySection');
+            sectionSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+            sections.forEach(section => {
+                sectionSelect.innerHTML += `<option value="${section.id}">${section.icon} ${section.name}</option>`;
+            });
+            
+            // Limpiar campos
+            document.getElementById('activityName').value = '';
+            document.getElementById('activityType').value = '';
+            document.getElementById('activityUnit').value = '';
+            document.getElementById('activityMin').value = '';
+            document.getElementById('activityMax').value = '';
+            document.getElementById('activityFrequency').value = '';
+            document.getElementById('parametrosFields').style.display = 'none';
+        }
+        
+        function closeAddActivityModal() {
+            document.getElementById('addActivityModal').style.display = 'none';
+        }
+        
+        function toggleActivityFields() {
+            const type = document.getElementById('activityType').value;
+            const parametrosFields = document.getElementById('parametrosFields');
+            parametrosFields.style.display = type === 'parametros' ? 'block' : 'none';
+        }
+        
+        async function saveNewActivity() {
+            const sectionId = parseInt(document.getElementById('activitySection').value);
+            const name = document.getElementById('activityName').value.trim();
+            const type = document.getElementById('activityType').value;
+            const frequency = document.getElementById('activityFrequency').value;
+            
+            // Validaciones
+            if (!sectionId) {
+                alert('Por favor selecciona una sección');
+                return;
+            }
+            
+            if (!name) {
+                alert('Por favor escribe el nombre de la actividad');
+                return;
+            }
+            
+            if (!type) {
+                alert('Por favor selecciona el tipo de registro');
+                return;
+            }
+            
+            if (!frequency) {
+                alert('Por favor selecciona la frecuencia');
+                return;
+            }
+            
+            const section = sections.find(s => s.id === sectionId);
             if (!section) {
                 alert('Sección no encontrada');
                 return;
             }
             
-            // Datos de la actividad
-            const name = prompt('Nombre de la actividad:');
-            if (!name || !name.trim()) return;
-            
-            const type = prompt('Tipo: "parametros" o "chequeo":');
-            if (type !== 'parametros' && type !== 'chequeo') {
-                alert('Tipo inválido. Debe ser "parametros" o "chequeo"');
-                return;
-            }
-            
-            const frequency = prompt('Frecuencia: "2 veces al dia", "semanal", "mensual", "trimestral":');
-            if (!frequency) return;
-            
             let unit = null, min = null, max = null;
             
             if (type === 'parametros') {
-                unit = prompt('Unidad (ej: PSI, °C, %, A):') || '';
-                const minStr = prompt('Valor mínimo:');
-                const maxStr = prompt('Valor máximo:');
+                unit = document.getElementById('activityUnit').value.trim() || '';
+                const minStr = document.getElementById('activityMin').value;
+                const maxStr = document.getElementById('activityMax').value;
                 min = minStr ? parseFloat(minStr) : null;
                 max = maxStr ? parseFloat(maxStr) : null;
             }
@@ -2641,7 +2763,7 @@
             const newActivity = {
                 id: newId,
                 sectionId: section.id,
-                name: name.trim(),
+                name: name,
                 type: type,
                 frequency: frequency,
                 unit: unit,
@@ -2655,6 +2777,7 @@
             await activitiesRef.set(activities);
             
             showSyncIndicator('✓ Actividad agregada', 'synced');
+            closeAddActivityModal();
             renderConfiguracion();
         }
         
@@ -2754,24 +2877,6 @@
                 await novedadesPredefinidasRef.set(novedadesPredefinidas);
                 showSyncIndicator('✓ Novedad eliminada', 'synced');
                 renderConfiguracion();
-            }
-        }
-        
-        // Funciones auxiliares para configuración
-        function moveSectionUp(sectionId) {
-            alert('Mover sección arriba: ' + sectionId);
-            // Implementación futura
-        }
-        
-        function moveSectionDown(sectionId) {
-            alert('Mover sección abajo: ' + sectionId);
-            // Implementación futura
-        }
-        
-        function deleteSection(sectionId) {
-            if (confirm('¿Estás seguro de eliminar esta sección? Se perderán todas sus actividades.')) {
-                alert('Eliminar sección: ' + sectionId);
-                // Implementación futura
             }
         }
         
