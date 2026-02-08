@@ -722,12 +722,14 @@
         };
 
         let database;
+        let storage;
 
         async function initializeFirebase() {
             try {
                 await waitForFirebase();
                 firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
+                storage = firebase.storage();
                 initializeRefs(); // Initialize database references
                 console.log('🔥 Firebase initialized successfully!');
                 return true;
@@ -1468,8 +1470,35 @@
                     <label>Otra Novedad (personalizada):</label>
                     <textarea id="customNovedad" rows="3" placeholder="Escribe aquí..."></textarea>
                 </div>
+                <div class="form-group">
+                    <label>📷 Fotos (Opcional - Máximo 3):</label>
+                    <input type="file" id="novedadPhotos" multiple accept="image/*" max="3" style="display: none;">
+                    <div class="photo-upload" onclick="document.getElementById('novedadPhotos').click()">
+                        <p>📷 Haz clic para agregar fotos</p>
+                        <small style="color: #999;">Máximo 3 fotos</small>
+                    </div>
+                    <div id="novedadPhotosPreview" class="photo-preview"></div>
+                </div>
                 <button onclick="saveNovedad()" class="btn">💾 Guardar Novedad</button>
             `;
+            
+            // Event listener para preview de fotos
+            document.getElementById('novedadPhotos').addEventListener('change', function(e) {
+                const preview = document.getElementById('novedadPhotosPreview');
+                preview.innerHTML = '';
+                const files = Array.from(e.target.files).slice(0, 3); // Máximo 3 fotos
+                
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 8px;';
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
             
             modal.style.display = 'block';
         }
@@ -1494,11 +1523,37 @@
             }
             
             if (selectedNovedades.length > 0) {
+                showSyncIndicator('💾 Guardando novedad...', 'syncing');
+                
+                // Subir fotos si hay
+                const photoFiles = document.getElementById('novedadPhotos').files;
+                const photoURLs = [];
+                
+                if (photoFiles.length > 0) {
+                    showSyncIndicator('📷 Subiendo fotos...', 'syncing');
+                    
+                    for (let i = 0; i < Math.min(photoFiles.length, 3); i++) {
+                        const file = photoFiles[i];
+                        const timestamp = Date.now();
+                        const fileName = `novedades/${currentDate}/${timestamp}_${i}.jpg`;
+                        const storageRef = storage.ref(fileName);
+                        
+                        try {
+                            await storageRef.put(file);
+                            const url = await storageRef.getDownloadURL();
+                            photoURLs.push(url);
+                        } catch (error) {
+                            console.error('Error subiendo foto:', error);
+                        }
+                    }
+                }
+                
                 const currentNovedades = dailyLogs[currentDate].novedades || [];
                 const newNovedad = {
                     text: selectedNovedades.join(', '),
                     user: currentUser.fullName,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    photos: photoURLs // Agregar URLs de fotos
                 };
                 
                 currentNovedades.push(newNovedad);
@@ -1655,13 +1710,117 @@
             // Mostrar novedades
             if (dailyLogs[currentDate].novedades && dailyLogs[currentDate].novedades.length > 0) {
                 reportHTML += `<div class="report-summary"><h3>📝 Novedades</h3>`;
-                dailyLogs[currentDate].novedades.forEach(novedad => {
-                    reportHTML += `<p>• ${novedad.text} <small>(${novedad.user})</small></p>`;
+                dailyLogs[currentDate].novedades.forEach((novedad, index) => {
+                    const photoIcon = novedad.photos && novedad.photos.length > 0 
+                        ? ` <span style="cursor: pointer; color: #667eea;" onclick="openPhotoCarousel(${index})">📷(${novedad.photos.length})</span>` 
+                        : '';
+                    reportHTML += `<p>• ${novedad.text}${photoIcon} <small>(${novedad.user})</small></p>`;
                 });
                 reportHTML += `</div>`;
             }
 
             container.innerHTML = reportHTML;
+        }
+
+        function openPhotoCarousel(novedadIndex) {
+            const novedad = dailyLogs[currentDate].novedades[novedadIndex];
+            if (!novedad || !novedad.photos || novedad.photos.length === 0) return;
+            
+            const modal = document.createElement('div');
+            modal.id = 'photoCarouselModal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.9); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; flex-direction: column;
+            `;
+            
+            let currentPhotoIndex = 0;
+            
+            const updatePhoto = () => {
+                const img = document.getElementById('carouselImg');
+                img.src = novedad.photos[currentPhotoIndex];
+                const counter = document.getElementById('photoCounter');
+                counter.textContent = `${currentPhotoIndex + 1} / ${novedad.photos.length}`;
+            };
+            
+            modal.innerHTML = `
+                <div style="position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; cursor: pointer; z-index: 10001;" onclick="document.getElementById('photoCarouselModal').remove()">✕</div>
+                <div style="position: absolute; top: 20px; left: 20px; color: white; font-size: 18px;" id="photoCounter"></div>
+                <img id="carouselImg" src="${novedad.photos[0]}" style="max-width: 90%; max-height: 90%; border-radius: 8px;">
+                ${novedad.photos.length > 1 ? `
+                    <div style="position: absolute; bottom: 40px; display: flex; gap: 20px;">
+                        <button id="prevBtn" style="background: white; border: none; padding: 15px 25px; border-radius: 8px; cursor: pointer; font-size: 18px;">← Anterior</button>
+                        <button id="nextBtn" style="background: white; border: none; padding: 15px 25px; border-radius: 8px; cursor: pointer; font-size: 18px;">Siguiente →</button>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.body.appendChild(modal);
+            updatePhoto();
+            
+            if (novedad.photos.length > 1) {
+                document.getElementById('prevBtn').addEventListener('click', () => {
+                    currentPhotoIndex = (currentPhotoIndex - 1 + novedad.photos.length) % novedad.photos.length;
+                    updatePhoto();
+                });
+                
+                document.getElementById('nextBtn').addEventListener('click', () => {
+                    currentPhotoIndex = (currentPhotoIndex + 1) % novedad.photos.length;
+                    updatePhoto();
+                });
+            }
+        }
+
+        function openHistorialPhotoCarousel(date, novedadIndex) {
+            const log = dailyLogs[date];
+            if (!log || !log.novedades) return;
+            
+            const novedad = log.novedades[novedadIndex];
+            if (!novedad || !novedad.photos || novedad.photos.length === 0) return;
+            
+            const modal = document.createElement('div');
+            modal.id = 'photoCarouselModal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.9); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; flex-direction: column;
+            `;
+            
+            let currentPhotoIndex = 0;
+            
+            const updatePhoto = () => {
+                const img = document.getElementById('carouselImg');
+                img.src = novedad.photos[currentPhotoIndex];
+                const counter = document.getElementById('photoCounter');
+                counter.textContent = `${currentPhotoIndex + 1} / ${novedad.photos.length}`;
+            };
+            
+            modal.innerHTML = `
+                <div style="position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; cursor: pointer; z-index: 10001;" onclick="document.getElementById('photoCarouselModal').remove()">✕</div>
+                <div style="position: absolute; top: 20px; left: 20px; color: white; font-size: 18px;" id="photoCounter"></div>
+                <img id="carouselImg" src="${novedad.photos[0]}" style="max-width: 90%; max-height: 90%; border-radius: 8px;">
+                ${novedad.photos.length > 1 ? `
+                    <div style="position: absolute; bottom: 40px; display: flex; gap: 20px;">
+                        <button id="prevBtn" style="background: white; border: none; padding: 15px 25px; border-radius: 8px; cursor: pointer; font-size: 18px;">← Anterior</button>
+                        <button id="nextBtn" style="background: white; border: none; padding: 15px 25px; border-radius: 8px; cursor: pointer; font-size: 18px;">Siguiente →</button>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.body.appendChild(modal);
+            updatePhoto();
+            
+            if (novedad.photos.length > 1) {
+                document.getElementById('prevBtn').addEventListener('click', () => {
+                    currentPhotoIndex = (currentPhotoIndex - 1 + novedad.photos.length) % novedad.photos.length;
+                    updatePhoto();
+                });
+                
+                document.getElementById('nextBtn').addEventListener('click', () => {
+                    currentPhotoIndex = (currentPhotoIndex + 1) % novedad.photos.length;
+                    updatePhoto();
+                });
+            }
         }
 
         function shareReport() {
@@ -1900,8 +2059,11 @@
                 // Mostrar novedades
                 if (log.novedades && log.novedades.length > 0) {
                     detailHTML += `<h4 style="color: #667eea; margin-top: 15px; margin-bottom: 10px;">📝 Novedades</h4>`;
-                    log.novedades.forEach(novedad => {
-                        detailHTML += `<p style="margin: 5px 0;">• ${novedad.text} <small style="color: #999;">(${novedad.user})</small></p>`;
+                    log.novedades.forEach((novedad, index) => {
+                        const photoIcon = novedad.photos && novedad.photos.length > 0 
+                            ? ` <span style="cursor: pointer; color: #667eea;" onclick="openHistorialPhotoCarousel('${date}', ${index})">📷(${novedad.photos.length})</span>` 
+                            : '';
+                        detailHTML += `<p style="margin: 5px 0;">• ${novedad.text}${photoIcon} <small style="color: #999;">(${novedad.user})</small></p>`;
                     });
                 }
                 
