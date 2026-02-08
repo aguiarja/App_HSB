@@ -1132,16 +1132,12 @@
                         const activityDataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            // Cuenta como completado si tiene CUALQUIER valor válido (incluso fuera de rango)
                             if (activityDataMorning && activityDataMorning.value !== null && activityDataMorning.value !== undefined && activityDataMorning.value !== '' && !isNaN(activityDataMorning.value)) {
-                                const value = parseFloat(activityDataMorning.value);
-                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
-                                if (inRange) completedFields++;
+                                completedFields++;
                             }
                             if (activityDataAfternoon && activityDataAfternoon.value !== null && activityDataAfternoon.value !== undefined && activityDataAfternoon.value !== '' && !isNaN(activityDataAfternoon.value)) {
-                                const value = parseFloat(activityDataAfternoon.value);
-                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
-                                if (inRange) completedFields++;
+                                completedFields++;
                             }
                         } else {
                             // Para chequeos, solo cuenta si está marcado como OK
@@ -1153,11 +1149,9 @@
                         const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            // Cuenta como completado si tiene CUALQUIER valor válido (incluso fuera de rango)
                             if (activityData && activityData.value !== null && activityData.value !== undefined && activityData.value !== '' && !isNaN(activityData.value)) {
-                                const value = parseFloat(activityData.value);
-                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
-                                if (inRange) completedFields++;
+                                completedFields++;
                             }
                         } else {
                             // Para chequeos, solo cuenta si está marcado como OK
@@ -1293,11 +1287,8 @@
                 const hasValue = value !== null && value !== undefined && value !== '' && !isNaN(value);
                 const hasAlert = hasValue && activity.min && activity.max && (parseFloat(value) < activity.min || parseFloat(value) > activity.max);
                 
-                // Determinar clase del campo: solo verde si está DENTRO del rango
-                let fieldClass = 'pending'; // Por defecto naranja
-                if (hasValue && !hasAlert) {
-                    fieldClass = 'completed'; // Verde solo si tiene valor Y está en rango
-                }
+                // Campo VERDE si tiene valor (incluso fuera de rango), NARANJA si está vacío
+                let fieldClass = hasValue ? 'completed' : 'pending';
                 
                 fieldDiv.className = `activity-field ${fieldClass}`;
                 
@@ -1305,7 +1296,7 @@
                     <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
                     <input type="number" step="0.1" id="activity_${activityKey}" 
                            value="${hasValue ? value : ''}" 
-                           class="${hasAlert ? 'alert' : (hasValue ? 'completed' : 'pending')}"
+                           class="${hasValue ? 'completed' : 'pending'}"
                            onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
                     ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
                     ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
@@ -1498,16 +1489,12 @@
                         const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
                         
                         if (activity.type === 'parametros') {
-                            // Solo cuenta como completado si tiene valor válido Y está dentro del rango
+                            // Cuenta como completado si tiene CUALQUIER valor válido (incluso fuera de rango)
                             if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
-                                const value = parseFloat(dataMorning.value);
-                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
-                                if (inRange) completedActivities++;
+                                completedActivities++;
                             }
                             if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
-                                const value = parseFloat(dataAfternoon.value);
-                                const inRange = !activity.min || !activity.max || (value >= activity.min && value <= activity.max);
-                                if (inRange) completedActivities++;
+                                completedActivities++;
                             }
                         } else {
                             // Para chequeos, solo cuenta si está marcado como OK
