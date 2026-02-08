@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Mantenimiento - Planta de Hielo</title>
+    <title>HSB APP - Sistema de Mantenimiento</title>
     <style>
         * {
             margin: 0;
@@ -27,40 +28,108 @@
             overflow: hidden;
         }
 
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        .login-container {
+            max-width: 450px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
-        .header h1 {
-            font-size: 28px;
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 200px;
+            margin-bottom: 20px;
+        }
+
+        .login-header h1 {
+            color: #1e3c72;
+            font-size: 24px;
             margin-bottom: 10px;
         }
 
-        .header p {
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            height: 60px;
+            width: auto;
+        }
+
+        .header-text h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .header-text p {
             opacity: 0.9;
-            font-size: 14px;
+            font-size: 12px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.4);
         }
 
         .tabs {
             display: flex;
             background: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
         }
 
         .tab {
             flex: 1;
-            padding: 15px;
+            min-width: 120px;
+            padding: 12px;
             text-align: center;
             cursor: pointer;
             background: #f8f9fa;
             border: none;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
             color: #495057;
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .tab:hover {
@@ -75,7 +144,7 @@
 
         .tab-content {
             display: none;
-            padding: 30px;
+            padding: 25px;
         }
 
         .tab-content.active {
@@ -83,20 +152,20 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #333;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 14px;
@@ -109,68 +178,134 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        input.pending {
+            border-color: #ff9800;
+            background-color: #fff3e0;
+        }
+
+        input.completed {
+            border-color: #4caf50;
+            background-color: #f1f8f4;
+        }
+
         input.alert {
             border-color: #dc3545;
             background-color: #fff5f5;
         }
 
-        input.ok {
-            border-color: #28a745;
-            background-color: #f0fff4;
-        }
-
         .alert-message {
             background: #dc3545;
             color: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
             margin-top: 5px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
         }
 
         .ok-message {
             background: #28a745;
             color: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
             margin-top: 5px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
         }
 
-        .compressor-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-        }
-
-        .compressor-section h3 {
-            color: #1e3c72;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        .row {
+        .section-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
+        }
+
+        .section-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .section-info h3 {
+            color: #1e3c72;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .section-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            min-width: 80px;
+        }
+
+        .section-icon {
+            font-size: 40px;
+        }
+
+        .section-view {
+            display: none;
+        }
+
+        .section-view.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .section-header h2 {
+            color: #1e3c72;
+            font-size: 22px;
         }
 
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 30px;
+            padding: 12px 25px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            width: 100%;
             transition: all 0.3s;
-            margin-top: 20px;
         }
 
         .btn:hover {
@@ -178,39 +313,40 @@
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-back {
+            background: #6c757d;
+        }
+
         .btn-secondary {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
 
-        .maintenance-item {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
         }
 
-        .maintenance-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-
-        .maintenance-item h4 {
-            color: #1e3c72;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .maintenance-item .frequency {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
+        .btn-small {
+            padding: 6px 12px;
             font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            margin: 3px;
+        }
+
+        .activity-field {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .activity-field.pending {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+
+        .activity-field.completed {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
         }
 
         .checkbox-group {
@@ -220,18 +356,19 @@
         }
 
         .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             margin-right: 10px;
         }
 
         .photo-upload {
             border: 2px dashed #667eea;
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            margin-top: 10px;
         }
 
         .photo-upload:hover {
@@ -242,82 +379,326 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
         .photo-preview img {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #e0e0e0;
         }
 
-        .records-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .plan-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
         }
 
-        .records-table th {
-            background: #1e3c72;
+        .plan-item.overdue {
+            border-left: 5px solid #dc3545;
+            background: #fff5f5;
+        }
+
+        .plan-item.ontime {
+            border-left: 5px solid #28a745;
+            background: #f1f8f4;
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .plan-header h4 {
+            color: #1e3c72;
+            font-size: 16px;
+        }
+
+        .frequency-badge {
+            display: inline-block;
+            background: #667eea;
             color: white;
-            padding: 12px;
-            text-align: left;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
             font-weight: 600;
-        }
-
-        .records-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .records-table tr:hover {
-            background: #f8f9fa;
         }
 
         .status-badge {
             display: inline-block;
             padding: 5px 10px;
             border-radius: 5px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
 
-        .status-ok {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-alert {
+        .status-overdue {
             background: #f8d7da;
             color: #721c24;
         }
 
-        .datetime-info {
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #007bff;
+        .status-ontime {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .filter-section {
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 3% auto;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            color: #1e3c72;
+            font-size: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .config-section {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-section h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .user-card {
             background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .user-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-card h4 {
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .role-admin {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .role-operador {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .permission-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .permission-item label {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .activity-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .activity-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .order-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-order {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-order:hover {
+            background: #5a6268;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .novedad-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .novedad-item p {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .novedad-item strong {
+            color: #1e3c72;
+        }
+
+        .report-summary {
+            background: white;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
         }
 
-        .filter-section .row {
+        .summary-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-left {
+                flex-direction: column;
+            }
+
+            .header-right {
+                margin-top: 10px;
+            }
+
             .tabs {
                 flex-direction: column;
             }
-            
+
             .row {
                 grid-template-columns: 1fr;
             }
@@ -325,553 +706,1893 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-header">
+            <h1>🧊 HSB APP</h1>
+            <p>Sistema de Mantenimiento - Control de Acceso</p>
+        </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Usuario:</label>
+                <input type="text" id="loginUsername" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <input type="password" id="loginPassword" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn">🔐 Iniciar Sesión</button>
+        </form>
+        <div id="loginError" style="color: #dc3545; margin-top: 15px; text-align: center; display: none;"></div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="mainScreen" class="container hidden">
         <div class="header">
-            <h1>🧊 Sistema de Mantenimiento - Planta de Hielo</h1>
-            <p>Control y Registro de Mantenimiento Preventivo</p>
+            <div class="header-left">
+                <div class="header-text">
+                    <h1>🧊 Sistema de Mantenimiento HSB</h1>
+                    <p>Control y Registro de Mantenimiento Preventivo</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <strong id="currentUserName"></strong>
+                    <div><small id="currentUserRole"></small></div>
+                </div>
+                <button class="btn-logout" onclick="logout()">🚪 Cerrar Sesión</button>
+            </div>
         </div>
 
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('reporte')">📊 Reporte Diario</button>
-            <button class="tab" onclick="showTab('mantenimiento')">🔧 Mantenimiento Preventivo</button>
-            <button class="tab" onclick="showTab('historial')">📋 Historial</button>
-        </div>
+        <div class="tabs" id="mainTabs"></div>
 
-        <!-- TAB 1: REPORTE DIARIO -->
-        <div id="reporte" class="tab-content active">
-            <h2 style="color: #1e3c72; margin-bottom: 20px;">Reporte de Producción</h2>
-            
-            <div class="datetime-info">
-                <strong>Fecha y Hora Actual:</strong> <span id="currentDateTime"></span>
+        <!-- TAB: REPORTE DIARIO -->
+        <div id="tab-reporte-diario" class="tab-content">
+            <div class="section-header">
+                <h2>📊 Reporte Diario</h2>
+                <div>
+                    <button onclick="shareReport()" class="btn btn-secondary btn-small">📱 Compartir WhatsApp</button>
+                    <button onclick="downloadReportPDF()" class="btn btn-small">📥 Descargar PDF</button>
+                </div>
             </div>
 
-            <form id="reporteForm">
+            <div class="summary-header">
+                <h3>Reporte del día: <span id="reportDate"></span></h3>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalActivities">0</div>
+                    <div class="stat-label">Total Actividades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completedActivities">0</div>
+                    <div class="stat-label">Completadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingActivities">0</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completionPercentage">0%</div>
+                    <div class="stat-label">Porcentaje</div>
+                </div>
+            </div>
+
+            <div id="reportContent"></div>
+        </div>
+
+        <!-- TAB: MANTENIMIENTO PREVENTIVO -->
+        <div id="tab-mantenimiento-preventivo" class="tab-content">
+            <!-- Vista de lista de secciones -->
+            <div id="sectionsList" class="section-list">
+                <div class="section-header">
+                    <h2>🔧 Mantenimiento Preventivo</h2>
+                    <button onclick="saveAllSections()" class="btn">💾 Guardar Todo</button>
+                </div>
+                <div id="sectionsContainer"></div>
+            </div>
+
+            <!-- Vista de detalle de sección -->
+            <div id="sectionDetail" class="section-view">
+                <div class="section-header">
+                    <h2 id="sectionDetailTitle"></h2>
+                    <button onclick="backToSectionsList()" class="btn btn-back">← Volver</button>
+                </div>
+                <div id="sectionDetailContent"></div>
+                <button onclick="saveSectionAndReturn()" class="btn btn-secondary">✓ Guardar y Volver</button>
+            </div>
+        </div>
+
+        <!-- TAB: PLAN -->
+        <div id="tab-plan" class="tab-content">
+            <div class="section-header">
+                <h2>📅 Plan de Mantenimiento</h2>
+                <p style="color: #666; font-size: 13px; margin-top: 5px;">Actividades periódicas que requieren aprobación</p>
+            </div>
+            <div id="planContent"></div>
+        </div>
+
+        <!-- TAB: HISTORIAL -->
+        <div id="tab-historial" class="tab-content">
+            <div class="section-header">
+                <h2>📋 Historial</h2>
+            </div>
+            <div id="historialContent"></div>
+        </div>
+
+        <!-- TAB: CONFIGURACIÓN -->
+        <div id="tab-configuracion" class="tab-content">
+            <h2 style="color: #1e3c72; margin-bottom: 20px;">⚙️ Panel de Configuración</h2>
+
+            <!-- Gestión de Usuarios -->
+            <div class="config-section">
+                <h3>👥 Gestión de Usuarios</h3>
+                <button onclick="openUserModal()" class="btn btn-secondary btn-small">➕ Nuevo Usuario</button>
+                <div id="usersList"></div>
+            </div>
+
+            <!-- Orden de Pestañas -->
+            <div class="config-section">
+                <h3>📑 Orden de Pestañas</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Define el orden en que aparecen las pestañas</p>
+                <div id="tabsOrderList"></div>
+                <button onclick="saveTabsOrder()" class="btn btn-small">💾 Guardar Orden</button>
+            </div>
+
+            <!-- Gestión de Secciones -->
+            <div class="config-section">
+                <h3>📂 Gestión de Secciones</h3>
+                <button onclick="openSectionModal()" class="btn btn-secondary btn-small">➕ Nueva Sección</button>
+                <div id="sectionsList2"></div>
+            </div>
+
+            <!-- Gestión de Actividades -->
+            <div class="config-section">
+                <h3>🔧 Gestión de Actividades</h3>
+                <button onclick="openActivityModal()" class="btn btn-secondary btn-small">➕ Nueva Actividad</button>
+                <div id="activitiesList"></div>
+            </div>
+
+            <!-- Novedades Predefinidas -->
+            <div class="config-section">
+                <h3>📝 Novedades Predefinidas</h3>
+                <button onclick="openNovedadModal()" class="btn btn-secondary btn-small">➕ Nueva Novedad</button>
+                <div id="novedadesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: USUARIO -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Nuevo Usuario</h2>
+                <span class="close" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="userForm">
+                <input type="hidden" id="editUserId">
                 <div class="form-group">
-                    <label>Mantenedor:</label>
-                    <input type="text" id="mantenedor" required>
+                    <label>Nombre Completo:</label>
+                    <input type="text" id="userFullName" required>
                 </div>
-
-                <div class="row">
-                    <div class="form-group">
-                        <label>Temperatura Cuba (°C):</label>
-                        <input type="number" step="0.1" id="temperatura" required>
-                        <div id="tempAlert"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Densidad (%):</label>
-                        <input type="number" step="1" id="densidad" required>
-                        <div id="densidadAlert"></div>
-                    </div>
-                </div>
-
-                <div class="compressor-section">
-                    <h3>🔵 Compresor MYCOM</h3>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Descarga (PSI):</label>
-                            <input type="number" id="mycom_descarga" required>
-                            <div id="mycom_descarga_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Succión (PSI):</label>
-                            <input type="number" id="mycom_succion" required>
-                            <div id="mycom_succion_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Amperaje:</label>
-                            <input type="number" id="mycom_amperaje" required>
-                            <div id="mycom_amperaje_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Nivel de Aceite:</label>
-                            <select id="mycom_aceite" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="FULL">FULL</option>
-                                <option value="3/4">3/4</option>
-                                <option value="1/2">1/2</option>
-                                <option value="1/4">1/4</option>
-                                <option value="BAJO">BAJO</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Capacidad (%):</label>
-                            <input type="number" id="mycom_capacidad" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="compressor-section">
-                    <h3>🟢 Compresor VILTER</h3>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Descarga (PSI):</label>
-                            <input type="number" id="vilter_descarga" required>
-                            <div id="vilter_descarga_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Succión (PSI):</label>
-                            <input type="number" id="vilter_succion" required>
-                            <div id="vilter_succion_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Amperaje:</label>
-                            <input type="number" id="vilter_amperaje" required>
-                            <div id="vilter_amperaje_alert"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Nivel de Aceite:</label>
-                            <select id="vilter_aceite" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="FULL">FULL</option>
-                                <option value="3/4">3/4</option>
-                                <option value="1/2">1/2</option>
-                                <option value="1/4">1/4</option>
-                                <option value="BAJO">BAJO</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Capacidad (%):</label>
-                            <input type="number" id="vilter_capacidad" required>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="form-group">
-                    <label>Novedades:</label>
-                    <textarea id="novedades" rows="3" placeholder="Describir cualquier novedad o incidente..."></textarea>
+                    <label>Usuario:</label>
+                    <input type="text" id="userUsername" required>
                 </div>
-
-                <div class="row">
-                    <div class="form-group">
-                        <label>Luz:</label>
-                        <input type="text" id="luz" placeholder="Estado del servicio eléctrico">
-                    </div>
-                    <div class="form-group">
-                        <label>Lluvia:</label>
-                        <input type="text" id="lluvia" placeholder="Condiciones climáticas">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="form-group">
-                        <label>Producción:</label>
-                        <input type="text" id="produccion" placeholder="Estado de producción">
-                    </div>
-                    <div class="form-group">
-                        <label>Otros:</label>
-                        <input type="text" id="otros" placeholder="Otros comentarios">
-                    </div>
-                </div>
-
                 <div class="form-group">
-                    <label>📸 Fotos del Reporte (Opcional):</label>
-                    <input type="file" id="reporteFotos" multiple accept="image/*" style="display: none;">
-                    <div class="photo-upload" onclick="document.getElementById('reporteFotos').click()">
-                        <p>📷 Haz clic para agregar fotos</p>
-                        <small>Puedes seleccionar múltiples fotos</small>
-                    </div>
-                    <div id="reporteFotosPreview" class="photo-preview"></div>
+                    <label>Contraseña:</label>
+                    <input type="password" id="userPassword" required>
                 </div>
-
-                <button type="submit" class="btn">💾 Guardar Reporte</button>
+                <div class="form-group">
+                    <label>Rol:</label>
+                    <select id="userRole" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="operador">Operador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Pestañas Permitidas:</label>
+                    <div class="permissions-grid" id="userPermissions"></div>
+                </div>
+                <button type="submit" class="btn">💾 Guardar Usuario</button>
             </form>
         </div>
+    </div>
 
-        <!-- TAB 2: MANTENIMIENTO PREVENTIVO -->
-        <div id="mantenimiento" class="tab-content">
-            <h2 style="color: #1e3c72; margin-bottom: 20px;">Mantenimiento Preventivo</h2>
-            
-            <div class="filter-section">
-                <label>Filtrar por frecuencia:</label>
-                <select id="frecuenciaFilter" onchange="filterMaintenance()">
-                    <option value="todos">Todos</option>
-                    <option value="2 veces al dia">2 veces al día</option>
-                    <option value="Diario">Diario</option>
-                    <option value="Semanal">Semanal</option>
-                    <option value="Quincenal">Quincenal</option>
-                    <option value="Mensual">Mensual</option>
-                    <option value="Trimestral">Trimestral</option>
-                    <option value="Anual">Anual</option>
-                </select>
+    <!-- MODAL: SECCIÓN -->
+    <div id="sectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="sectionModalTitle">Nueva Sección</h2>
+                <span class="close" onclick="closeSectionModal()">&times;</span>
             </div>
-
-            <div id="maintenanceList"></div>
-
-            <button onclick="saveMaintenanceLog()" class="btn btn-secondary">✅ Guardar Actividades Realizadas</button>
+            <form id="sectionForm">
+                <input type="hidden" id="editSectionId">
+                <div class="form-group">
+                    <label>Nombre de la Sección:</label>
+                    <input type="text" id="sectionName" required>
+                </div>
+                <div class="form-group">
+                    <label>Icono (emoji):</label>
+                    <input type="text" id="sectionIcon" placeholder="🔧" maxlength="2">
+                </div>
+                <button type="submit" class="btn">💾 Guardar Sección</button>
+            </form>
         </div>
+    </div>
 
-        <!-- TAB 3: HISTORIAL -->
-        <div id="historial" class="tab-content">
-            <h2 style="color: #1e3c72; margin-bottom: 20px;">Historial de Reportes</h2>
-            
-            <div class="filter-section">
-                <div class="row">
+    <!-- MODAL: ACTIVIDAD -->
+    <div id="activityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="activityModalTitle">Nueva Actividad</h2>
+                <span class="close" onclick="closeActivityModal()">&times;</span>
+            </div>
+            <form id="activityForm">
+                <input type="hidden" id="editActivityId">
+                <div class="form-group">
+                    <label>Sección:</label>
+                    <select id="activitySection" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Nombre de la Actividad:</label>
+                    <input type="text" id="activityName" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Actividad:</label>
+                    <select id="activityType" required onchange="toggleActivityFields()">
+                        <option value="">Seleccionar...</option>
+                        <option value="parametros">Con Registro de Parámetros</option>
+                        <option value="chequeo">Actividad de Chequeo</option>
+                    </select>
+                </div>
+                <div id="parametrosFields" class="hidden">
                     <div class="form-group">
-                        <label>Desde:</label>
-                        <input type="date" id="filterFechaDesde">
+                        <label>Unidad (opcional):</label>
+                        <input type="text" id="activityUnit" placeholder="ej: PSI, °C, A">
                     </div>
-                    <div class="form-group">
-                        <label>Hasta:</label>
-                        <input type="date" id="filterFechaHasta">
-                    </div>
-                    <div class="form-group">
-                        <label>Tipo:</label>
-                        <select id="filterTipo">
-                            <option value="todos">Todos</option>
-                            <option value="reporte">Reportes Diarios</option>
-                            <option value="mantenimiento">Mantenimiento</option>
-                        </select>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Rango Mínimo:</label>
+                            <input type="number" step="0.1" id="activityMin">
+                        </div>
+                        <div class="form-group">
+                            <label>Rango Máximo:</label>
+                            <input type="number" step="0.1" id="activityMax">
+                        </div>
                     </div>
                 </div>
-                <button onclick="filterHistory()" class="btn" style="margin-top: 10px;">🔍 Filtrar</button>
-                <button onclick="exportToExcel()" class="btn btn-secondary" style="margin-top: 10px;">📥 Exportar a Excel</button>
-            </div>
+                <div class="form-group">
+                    <label>Frecuencia:</label>
+                    <select id="activityFrequency" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="2 veces al dia">2 veces al día</option>
+                        <option value="Diario">Diario</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Quincenal">Quincenal</option>
+                        <option value="Mensual">Mensual</option>
+                        <option value="Trimestral">Trimestral</option>
+                        <option value="Semestral">Semestral</option>
+                        <option value="Anual">Anual</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mostrar en Resumen:</label>
+                    <select id="activityShowInSummary" required>
+                        <option value="detalle">Mostrar Detalle</option>
+                        <option value="estado">Mostrar Solo Estado</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">💾 Guardar Actividad</button>
+            </form>
+        </div>
+    </div>
 
-            <div id="historialContent"></div>
+    <!-- MODAL: NOVEDAD PREDEFINIDA -->
+    <div id="novedadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nueva Novedad Predefinida</h2>
+                <span class="close" onclick="closeNovedadModal()">&times;</span>
+            </div>
+            <form id="novedadForm">
+                <div class="form-group">
+                    <label>Texto de la Novedad:</label>
+                    <input type="text" id="novedadText" required placeholder="ej: Lluvia, Sin Luz, Falla de Equipos">
+                </div>
+                <button type="submit" class="btn">💾 Guardar Novedad</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: REPORTAR NOVEDAD -->
+    <div id="reportNovedadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 Reportar Novedad</h2>
+                <span class="close" onclick="closeReportNovedadModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Novedades Predefinidas:</label>
+                <div id="novedadesCheckboxes"></div>
+            </div>
+            <div class="form-group">
+                <label>Descripción Adicional:</label>
+                <textarea id="novedadCustomText" rows="4" placeholder="Describe cualquier novedad adicional..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>📸 Fotos (Opcional):</label>
+                <input type="file" id="novedadFotos" multiple accept="image/*">
+            </div>
+            <button onclick="saveNovedad()" class="btn">💾 Guardar Novedad</button>
         </div>
     </div>
 
     <script>
-        // Base de datos local (localStorage)
-        let reportes = JSON.parse(localStorage.getItem('reportes')) || [];
-        let maintenanceLogs = JSON.parse(localStorage.getItem('maintenanceLogs')) || [];
+        // ==================== DATOS E INICIALIZACIÓN ====================
+        
+        let currentUser = null;
+        let currentSectionId = null;
+        let currentDate = new Date().toISOString().split('T')[0];
 
-        // Rangos de valores aceptables
-        const rangos = {
-            temperatura: { min: -15, max: -12 },
-            densidad: { min: 70, max: 80 },
-            mycom: {
-                descarga: { min: 180, max: 220 },
-                succion: { min: 8, max: 18 },
-                amperaje: { min: 60, max: 75 }
+        // Usuarios por defecto
+        const defaultUsers = [
+            { 
+                id: 1, 
+                username: 'admin', 
+                password: 'admin123', 
+                fullName: 'Administrador',
+                role: 'admin',
+                permissions: ['reporte-diario', 'mantenimiento-preventivo', 'plan', 'historial', 'configuracion']
             },
-            vilter: {
-                descarga: { min: 170, max: 200 },
-                succion: { min: 5, max: 15 },
-                amperaje: { min: 45, max: 85 }
+            { 
+                id: 2, 
+                username: 'supervisor', 
+                password: 'super123', 
+                fullName: 'Supervisor',
+                role: 'supervisor',
+                permissions: ['reporte-diario', 'mantenimiento-preventivo', 'plan', 'historial']
+            },
+            { 
+                id: 3, 
+                username: 'operador', 
+                password: 'operador123', 
+                fullName: 'Operador General',
+                role: 'operador',
+                permissions: ['mantenimiento-preventivo', 'reporte-diario']
             }
-        };
-
-        // Actividades de mantenimiento según la guía
-        const actividadesMantenimiento = [
-            { id: 1, equipo: "COMPRESORES", actividad: "Presión de aceite", frecuencia: "2 veces al dia" },
-            { id: 2, equipo: "COMPRESORES", actividad: "Descarga", frecuencia: "2 veces al dia" },
-            { id: 3, equipo: "COMPRESORES", actividad: "Succión", frecuencia: "2 veces al dia" },
-            { id: 4, equipo: "COMPRESORES", actividad: "Visor de aceite", frecuencia: "2 veces al dia" },
-            { id: 5, equipo: "COMPRESORES", actividad: "Correas", frecuencia: "2 veces al dia" },
-            { id: 6, equipo: "COMPRESORES", actividad: "Ruidos en el compresor", frecuencia: "2 veces al dia" },
-            { id: 7, equipo: "COMPRESORES", actividad: "Fugas de amoniaco", frecuencia: "2 veces al dia" },
-            { id: 8, equipo: "COMPRESORES", actividad: "Amperajes del motor", frecuencia: "Semanal" },
-            { id: 9, equipo: "COMPRESORES", actividad: "Rodamientos y poleas", frecuencia: "2 veces al dia" },
-            { id: 10, equipo: "COMPRESORES", actividad: "Recalentamiento de tapas cabezales", frecuencia: "2 veces al dia" },
-            { id: 11, equipo: "COMPRESORES", actividad: "Limpieza", frecuencia: "2 veces al dia" },
-            { id: 12, equipo: "AGITADORES", actividad: "Correas", frecuencia: "2 veces al dia" },
-            { id: 13, equipo: "AGITADORES", actividad: "Amperajes del motor", frecuencia: "Semanal" },
-            { id: 14, equipo: "AGITADORES", actividad: "Poleas alineadas", frecuencia: "2 veces al dia" },
-            { id: 15, equipo: "AGITADORES", actividad: "Chumaceras", frecuencia: "2 veces al dia" },
-            { id: 16, equipo: "AGITADORES", actividad: "Grasa Chumaceras", frecuencia: "Semanal" },
-            { id: 17, equipo: "AGITADORES", actividad: "Estructuras metálica 'Soldadura'", frecuencia: "2 veces al dia" },
-            { id: 18, equipo: "AGITADORES", actividad: "Limpieza", frecuencia: "2 veces al dia" },
-            { id: 19, equipo: "PUENTE GRUA", actividad: "Amperaje", frecuencia: "Semanal" },
-            { id: 20, equipo: "PUENTE GRUA", actividad: "Grasa en las cadenas", frecuencia: "Semanal" },
-            { id: 21, equipo: "PUENTE GRUA", actividad: "Botonera", frecuencia: "Semanal" },
-            { id: 22, equipo: "CONDENSADOR", actividad: "Motor", frecuencia: "Semanal" },
-            { id: 23, equipo: "CONDENSADOR", actividad: "Bomba", frecuencia: "Semanal" },
-            { id: 24, equipo: "CONDENSADOR", actividad: "Amperaje", frecuencia: "Semanal" },
-            { id: 25, equipo: "CONDENSADOR", actividad: "Chumaceras", frecuencia: "Semanal" },
-            { id: 26, equipo: "CONDENSADOR", actividad: "Grasa Chumaceras", frecuencia: "Quincenal" },
-            { id: 27, equipo: "CONDENSADOR", actividad: "Correas", frecuencia: "Semanal" },
-            { id: 28, equipo: "CONDENSADOR", actividad: "Roceadores", frecuencia: "Semanal" },
-            { id: 29, equipo: "CONDENSADOR", actividad: "Atrapagotas", frecuencia: "Semanal" },
-            { id: 30, equipo: "CONDENSADOR", actividad: "Glower", frecuencia: "Semanal" },
-            { id: 31, equipo: "CONDENSADOR", actividad: "Fugas de agua", frecuencia: "Semanal" },
-            { id: 32, equipo: "CUBA", actividad: "Nivel de agua", frecuencia: "2 veces al dia" },
-            { id: 33, equipo: "CUBA", actividad: "Densidad", frecuencia: "2 veces al dia" },
-            { id: 34, equipo: "CUBA", actividad: "Tablas rotas", frecuencia: "Semanal" },
-            { id: 35, equipo: "CUBA", actividad: "Lona en buen estado", frecuencia: "Semanal" },
-            { id: 36, equipo: "CUBA", actividad: "Potes rotos", frecuencia: "Diario" },
-            { id: 37, equipo: "CUBA", actividad: "Limpieza general", frecuencia: "Diario" },
-            { id: 38, equipo: "CALDERINES", actividad: "Manómetro de succión", frecuencia: "2 veces al dia" },
-            { id: 39, equipo: "CALDERINES", actividad: "Válvula de expansión", frecuencia: "2 veces al dia" },
-            { id: 40, equipo: "CALDERINES", actividad: "Electroválvula (Activación/Desactiv)", frecuencia: "2 veces al dia" },
-            { id: 41, equipo: "CALDERINES", actividad: "Válvula de seguridad", frecuencia: "2 veces al dia" },
-            { id: 42, equipo: "CALDERINES", actividad: "Estructura metálica (Limpieza alrededor)", frecuencia: "2 veces al dia" },
-            { id: 43, equipo: "TRAMPAS DE LIQUIDOS", actividad: "Retorno de líquidos (válvulas abiertas)", frecuencia: "2 veces al dia" },
-            { id: 44, equipo: "TRAMPAS DE LIQUIDOS", actividad: "Limpieza de estructuras", frecuencia: "2 veces al dia" },
-            { id: 45, equipo: "RECIBIDORES DE AMONIACO", actividad: "Visores", frecuencia: "2 veces al dia" },
-            { id: 46, equipo: "RECIBIDORES DE AMONIACO", actividad: "Válvulas abiertas", frecuencia: "2 veces al dia" },
-            { id: 47, equipo: "RECIBIDORES DE AMONIACO", actividad: "Limpieza del área", frecuencia: "2 veces al dia" },
-            { id: 48, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Rocío constante en el tanque", frecuencia: "2 veces al dia" },
-            { id: 49, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Flotador", frecuencia: "2 veces al dia" },
-            { id: 50, equipo: "TORRE DE ENFRIAMIENTO", actividad: "Limpieza del área", frecuencia: "2 veces al dia" },
-            { id: 51, equipo: "MOLINO", actividad: "Amperaje", frecuencia: "Semanal" },
-            { id: 52, equipo: "MOLINO", actividad: "Chumaceras", frecuencia: "Diario" },
-            { id: 53, equipo: "MOLINO", actividad: "Tensión de cadenas", frecuencia: "Diario" },
-            { id: 54, equipo: "MOLINO", actividad: "Pua de Blower", frecuencia: "Diario" },
-            { id: 55, equipo: "MOLINO", actividad: "Buen estado de correas", frecuencia: "Diario" },
-            { id: 56, equipo: "MOLINO", actividad: "Soldadura en general", frecuencia: "Diario" },
-            { id: 57, equipo: "MOLINO", actividad: "Limpieza", frecuencia: "Diario" },
-            { id: 58, equipo: "HIDRONEUMATICO", actividad: "Válvula de tanque abierta", frecuencia: "2 veces al dia" },
-            { id: 59, equipo: "HIDRONEUMATICO", actividad: "Ruidos en el motor", frecuencia: "2 veces al dia" },
-            { id: 60, equipo: "HIDRONEUMATICO", actividad: "Agregar cloro a tanques principales", frecuencia: "Diario" }
         ];
 
-        // Actualizar fecha y hora actual
-        function updateDateTime() {
-            const now = new Date();
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
-            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('es-ES', options);
-        }
-        updateDateTime();
-        setInterval(updateDateTime, 60000);
+        // Pestañas disponibles
+        const availableTabs = [
+            { id: 'reporte-diario', name: '📊 Reporte Diario', order: 1 },
+            { id: 'mantenimiento-preventivo', name: '🔧 Mantenimiento Preventivo', order: 2 },
+            { id: 'plan', name: '📅 Plan', order: 3 },
+            { id: 'historial', name: '📋 Historial', order: 4 },
+            { id: 'configuracion', name: '⚙️ Configuración', order: 5 }
+        ];
 
-        // Validación de rangos con alertas
-        function validateRange(inputId, min, max, alertId, unit = '') {
-            const input = document.getElementById(inputId);
-            const alertDiv = document.getElementById(alertId);
+        // Secciones por defecto
+        const defaultSections = [
+            { id: 1, name: 'Parámetros Generales', icon: '📊', order: 1 },
+            { id: 2, name: 'Compresor MYCOM', icon: '🔵', order: 2 },
+            { id: 3, name: 'Compresor VILTER', icon: '🟢', order: 3 },
+            { id: 4, name: 'Novedades', icon: '📝', order: 4 }
+        ];
+
+        // Actividades por defecto
+        const defaultActivities = [
+            // Parámetros Generales
+            { id: 1, sectionId: 1, name: 'Temperatura Cuba', type: 'parametros', unit: '°C', min: -15, max: -12, frequency: '2 veces al dia', showInSummary: 'detalle', order: 1 },
+            { id: 2, sectionId: 1, name: 'Densidad', type: 'parametros', unit: '%', min: 70, max: 80, frequency: '2 veces al dia', showInSummary: 'detalle', order: 2 },
             
-            input.addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                
-                if (value < min || value > max) {
-                    this.classList.add('alert');
-                    this.classList.remove('ok');
-                    alertDiv.innerHTML = `<div class="alert-message">⚠️ FUERA DE RANGO: Debe estar entre ${min}${unit} y ${max}${unit}</div>`;
-                } else {
-                    this.classList.remove('alert');
-                    this.classList.add('ok');
-                    alertDiv.innerHTML = `<div class="ok-message">✓ Valor dentro del rango normal</div>`;
-                }
-            });
-        }
-
-        // Configurar validaciones
-        validateRange('temperatura', rangos.temperatura.min, rangos.temperatura.max, 'tempAlert', '°C');
-        validateRange('densidad', rangos.densidad.min, rangos.densidad.max, 'densidadAlert', '%');
-        validateRange('mycom_descarga', rangos.mycom.descarga.min, rangos.mycom.descarga.max, 'mycom_descarga_alert', ' PSI');
-        validateRange('mycom_succion', rangos.mycom.succion.min, rangos.mycom.succion.max, 'mycom_succion_alert', ' PSI');
-        validateRange('mycom_amperaje', rangos.mycom.amperaje.min, rangos.mycom.amperaje.max, 'mycom_amperaje_alert', 'A');
-        validateRange('vilter_descarga', rangos.vilter.descarga.min, rangos.vilter.descarga.max, 'vilter_descarga_alert', ' PSI');
-        validateRange('vilter_succion', rangos.vilter.succion.min, rangos.vilter.succion.max, 'vilter_succion_alert', ' PSI');
-        validateRange('vilter_amperaje', rangos.vilter.amperaje.min, rangos.vilter.amperaje.max, 'vilter_amperaje_alert', 'A');
-
-        // Preview de fotos
-        document.getElementById('reporteFotos').addEventListener('change', function(e) {
-            const preview = document.getElementById('reporteFotosPreview');
-            preview.innerHTML = '';
+            // MYCOM
+            { id: 3, sectionId: 2, name: 'Descarga', type: 'parametros', unit: 'PSI', min: 180, max: 220, frequency: '2 veces al dia', showInSummary: 'detalle', order: 1 },
+            { id: 4, sectionId: 2, name: 'Succión', type: 'parametros', unit: 'PSI', min: 8, max: 18, frequency: '2 veces al dia', showInSummary: 'detalle', order: 2 },
+            { id: 5, sectionId: 2, name: 'Amperaje', type: 'parametros', unit: 'A', min: 60, max: 75, frequency: '2 veces al dia', showInSummary: 'detalle', order: 3 },
+            { id: 6, sectionId: 2, name: 'Nivel de Aceite', type: 'chequeo', frequency: '2 veces al dia', showInSummary: 'estado', order: 4 },
+            { id: 7, sectionId: 2, name: 'Capacidad', type: 'parametros', unit: '%', min: 0, max: 100, frequency: '2 veces al dia', showInSummary: 'detalle', order: 5 },
             
-            for (let file of e.target.files) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = document.createElement('img');
-                    img.src = event.target.result;
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+            // VILTER
+            { id: 8, sectionId: 3, name: 'Descarga', type: 'parametros', unit: 'PSI', min: 170, max: 200, frequency: '2 veces al dia', showInSummary: 'detalle', order: 1 },
+            { id: 9, sectionId: 3, name: 'Succión', type: 'parametros', unit: 'PSI', min: 5, max: 15, frequency: '2 veces al dia', showInSummary: 'detalle', order: 2 },
+            { id: 10, sectionId: 3, name: 'Amperaje', type: 'parametros', unit: 'A', min: 45, max: 85, frequency: '2 veces al dia', showInSummary: 'detalle', order: 3 },
+            { id: 11, sectionId: 3, name: 'Nivel de Aceite', type: 'chequeo', frequency: '2 veces al dia', showInSummary: 'estado', order: 4 },
+            { id: 12, sectionId: 3, name: 'Capacidad', type: 'parametros', unit: '%', min: 0, max: 100, frequency: '2 veces al dia', showInSummary: 'detalle', order: 5 }
+        ];
 
-        // Guardar reporte
-        document.getElementById('reporteForm').addEventListener('submit', function(e) {
+        // Novedades predefinidas
+        const defaultNovedades = [
+            { id: 1, text: 'Lluvia' },
+            { id: 2, text: 'Sin Luz' },
+            { id: 3, text: 'Falla de Equipos' }
+        ];
+
+        // Inicializar datos - FORZAR ACTUALIZACIÓN DE USUARIOS Y PESTAÑAS
+        localStorage.setItem('users', JSON.stringify(defaultUsers)); // Forzar actualización
+        localStorage.setItem('tabs', JSON.stringify(availableTabs)); // Forzar actualización
+        if (!localStorage.getItem('sections')) localStorage.setItem('sections', JSON.stringify(defaultSections));
+        if (!localStorage.getItem('activities')) localStorage.setItem('activities', JSON.stringify(defaultActivities));
+        if (!localStorage.getItem('novedadesPredefinidas')) localStorage.setItem('novedadesPredefinidas', JSON.stringify(defaultNovedades));
+        if (!localStorage.getItem('dailyLogs')) localStorage.setItem('dailyLogs', JSON.stringify({}));
+        if (!localStorage.getItem('planActivities')) localStorage.setItem('planActivities', JSON.stringify([]));
+
+        let users = JSON.parse(localStorage.getItem('users'));
+        let tabs = JSON.parse(localStorage.getItem('tabs'));
+        let sections = JSON.parse(localStorage.getItem('sections'));
+        let activities = JSON.parse(localStorage.getItem('activities'));
+        let novedadesPredefinidas = JSON.parse(localStorage.getItem('novedadesPredefinidas'));
+        let dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+        let planActivities = JSON.parse(localStorage.getItem('planActivities'));
+
+        // ==================== AUTENTICACIÓN ====================
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
             
-            const reporte = {
-                id: Date.now(),
-                tipo: 'reporte',
-                fecha: new Date().toISOString(),
-                mantenedor: document.getElementById('mantenedor').value,
-                temperatura: parseFloat(document.getElementById('temperatura').value),
-                densidad: parseFloat(document.getElementById('densidad').value),
-                mycom: {
-                    descarga: parseFloat(document.getElementById('mycom_descarga').value),
-                    succion: parseFloat(document.getElementById('mycom_succion').value),
-                    amperaje: parseFloat(document.getElementById('mycom_amperaje').value),
-                    aceite: document.getElementById('mycom_aceite').value,
-                    capacidad: parseFloat(document.getElementById('mycom_capacidad').value)
-                },
-                vilter: {
-                    descarga: parseFloat(document.getElementById('vilter_descarga').value),
-                    succion: parseFloat(document.getElementById('vilter_succion').value),
-                    amperaje: parseFloat(document.getElementById('vilter_amperaje').value),
-                    aceite: document.getElementById('vilter_aceite').value,
-                    capacidad: parseFloat(document.getElementById('vilter_capacidad').value)
-                },
-                novedades: document.getElementById('novedades').value,
-                luz: document.getElementById('luz').value,
-                lluvia: document.getElementById('lluvia').value,
-                produccion: document.getElementById('produccion').value,
-                otros: document.getElementById('otros').value
-            };
+            // Recargar usuarios por si fueron actualizados
+            users = JSON.parse(localStorage.getItem('users'));
             
-            reportes.push(reporte);
-            localStorage.setItem('reportes', JSON.stringify(reportes));
+            const user = users.find(u => u.username === username && u.password === password);
             
-            alert('✅ Reporte guardado exitosamente!');
-            this.reset();
-            location.reload();
+            console.log('Login attempt:', username);
+            console.log('Found user:', user);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                console.log('Login successful, showing main screen');
+                showMainScreen();
+            } else {
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = '❌ Usuario o contraseña incorrectos';
+                errorDiv.style.display = 'block';
+            }
         });
 
-        // Renderizar actividades de mantenimiento
-        function renderMaintenanceActivities(filter = 'todos') {
-            const container = document.getElementById('maintenanceList');
-            container.innerHTML = '';
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        function showMainScreen() {
+            console.log('Showing main screen for user:', currentUser);
             
-            const filtered = filter === 'todos' 
-                ? actividadesMantenimiento 
-                : actividadesMantenimiento.filter(a => a.frecuencia === filter);
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            document.getElementById('currentUserName').textContent = currentUser.fullName;
+            document.getElementById('currentUserRole').textContent = currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'supervisor' ? 'Supervisor' : 'Operador';
             
-            let currentEquipo = '';
+            // Recargar tabs desde localStorage
+            tabs = JSON.parse(localStorage.getItem('tabs'));
+            console.log('Tabs loaded:', tabs);
             
-            filtered.forEach(actividad => {
-                if (actividad.equipo !== currentEquipo) {
-                    currentEquipo = actividad.equipo;
-                    const header = document.createElement('h3');
-                    header.style.cssText = 'color: #1e3c72; margin-top: 20px; margin-bottom: 15px;';
-                    header.textContent = `🔧 ${currentEquipo}`;
-                    container.appendChild(header);
-                }
+            // IMPORTANTE: Inicializar el log diario ANTES de renderizar las tabs
+            initializeDailyLog();
+            
+            // Luego renderizar las tabs
+            renderTabs();
+        }
+
+        window.addEventListener('load', function() {
+            console.log('Page loaded, checking for saved session');
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                const savedUserData = JSON.parse(savedUser);
+                console.log('Found saved user:', savedUserData);
                 
-                const item = document.createElement('div');
-                item.className = 'maintenance-item';
-                item.innerHTML = `
-                    <span class="frequency">${actividad.frecuencia}</span>
-                    <h4>${actividad.actividad}</h4>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="act_${actividad.id}">
-                        <label for="act_${actividad.id}">Actividad realizada</label>
-                    </div>
-                    <div class="form-group">
-                        <label>Observaciones:</label>
-                        <input type="text" id="obs_${actividad.id}" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label>📸 Foto (Opcional):</label>
-                        <input type="file" id="foto_${actividad.id}" accept="image/*">
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        renderMaintenanceActivities();
-
-        function filterMaintenance() {
-            const filter = document.getElementById('frecuenciaFilter').value;
-            renderMaintenanceActivities(filter);
-        }
-
-        // Guardar log de mantenimiento
-        function saveMaintenanceLog() {
-            const completedActivities = [];
-            
-            actividadesMantenimiento.forEach(actividad => {
-                const checkbox = document.getElementById(`act_${actividad.id}`);
-                if (checkbox && checkbox.checked) {
-                    completedActivities.push({
-                        ...actividad,
-                        observaciones: document.getElementById(`obs_${actividad.id}`).value,
-                        completado: true
-                    });
-                }
-            });
-            
-            if (completedActivities.length === 0) {
-                alert('⚠️ No has marcado ninguna actividad como realizada');
-                return;
-            }
-            
-            const log = {
-                id: Date.now(),
-                tipo: 'mantenimiento',
-                fecha: new Date().toISOString(),
-                actividades: completedActivities
-            };
-            
-            maintenanceLogs.push(log);
-            localStorage.setItem('maintenanceLogs', JSON.stringify(maintenanceLogs));
-            
-            alert(`✅ Se guardaron ${completedActivities.length} actividades de mantenimiento`);
-            renderMaintenanceActivities();
-        }
-
-        // Mostrar historial
-        function showHistory() {
-            const container = document.getElementById('historialContent');
-            const allRecords = [...reportes, ...maintenanceLogs].sort((a, b) => 
-                new Date(b.fecha) - new Date(a.fecha)
-            );
-            
-            if (allRecords.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay registros aún</p>';
-                return;
-            }
-            
-            let html = '<table class="records-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalles</th><th>Estado</th></tr></thead><tbody>';
-            
-            allRecords.forEach(record => {
-                const fecha = new Date(record.fecha).toLocaleString('es-ES');
+                // Recargar usuarios para obtener datos actualizados
+                users = JSON.parse(localStorage.getItem('users'));
                 
-                if (record.tipo === 'reporte') {
-                    const alerts = [];
-                    if (record.temperatura < rangos.temperatura.min || record.temperatura > rangos.temperatura.max) alerts.push('Temperatura');
-                    if (record.densidad < rangos.densidad.min || record.densidad > rangos.densidad.max) alerts.push('Densidad');
-                    
-                    const status = alerts.length > 0 
-                        ? `<span class="status-badge status-alert">⚠️ Alertas: ${alerts.join(', ')}</span>`
-                        : `<span class="status-badge status-ok">✓ Normal</span>`;
-                    
-                    html += `
-                        <tr>
-                            <td>${fecha}</td>
-                            <td>📊 Reporte Diario</td>
-                            <td>Temp: ${record.temperatura}°C | Densidad: ${record.densidad}% | ${record.mantenedor}</td>
-                            <td>${status}</td>
-                        </tr>
-                    `;
+                // Buscar el usuario actualizado
+                const updatedUser = users.find(u => u.id === savedUserData.id);
+                if (updatedUser) {
+                    currentUser = updatedUser;
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    console.log('User data updated:', currentUser);
+                    showMainScreen();
                 } else {
-                    html += `
-                        <tr>
-                            <td>${fecha}</td>
-                            <td>🔧 Mantenimiento</td>
-                            <td>${record.actividades.length} actividades completadas</td>
-                            <td><span class="status-badge status-ok">✓ Completado</span></td>
-                        </tr>
-                    `;
+                    console.log('User not found, please login again');
+                }
+            } else {
+                console.log('No saved session found');
+            }
+        });
+
+        // ==================== RENDERIZADO DE PESTAÑAS ====================
+        
+        function renderTabs() {
+            const tabsContainer = document.getElementById('mainTabs');
+            tabsContainer.innerHTML = '';
+            
+            console.log('Current User:', currentUser);
+            console.log('User Permissions:', currentUser.permissions);
+            console.log('Available Tabs:', tabs);
+            
+            const userTabs = tabs
+                .filter(tab => currentUser.permissions.includes(tab.id))
+                .sort((a, b) => a.order - b.order);
+            
+            console.log('Filtered User Tabs:', userTabs);
+            
+            if (userTabs.length === 0) {
+                console.error('No tabs found for user!');
+                tabsContainer.innerHTML = '<p style="color: white; padding: 20px;">Error: No se encontraron pestañas para este usuario</p>';
+                return;
+            }
+            
+            userTabs.forEach((tab, index) => {
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tab' + (index === 0 ? ' active' : '');
+                tabButton.textContent = tab.name;
+                tabButton.onclick = function() { showTab(tab.id, this); };
+                tabsContainer.appendChild(tabButton);
+                
+                const tabContent = document.getElementById(`tab-${tab.id}`);
+                if (tabContent) {
+                    tabContent.classList.toggle('active', index === 0);
                 }
             });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
+
+            if (userTabs.length > 0) {
+                showTab(userTabs[0].id);
+            }
         }
 
-        function filterHistory() {
-            // Implementar filtrado
-            showHistory();
-        }
-
-        function exportToExcel() {
-            alert('📥 Función de exportación en desarrollo. Los datos se pueden copiar desde la tabla.');
-        }
-
-        // Cambio de tabs
-        function showTab(tabName) {
+        function showTab(tabId, targetButton) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+            // Encontrar y activar el botón correcto
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                if (tab.textContent.includes(tabId) || tab === targetButton) {
+                    tab.classList.add('active');
+                }
+            });
             
-            if (tabName === 'historial') {
-                showHistory();
+            const tabContent = document.getElementById(`tab-${tabId}`);
+            if (tabContent) {
+                tabContent.classList.add('active');
+                
+                if (tabId === 'mantenimiento-preventivo') {
+                    renderSections();
+                } else if (tabId === 'plan') {
+                    renderPlan();
+                } else if (tabId === 'reporte-diario') {
+                    renderReporteDiario();
+                } else if (tabId === 'historial') {
+                    renderHistorial();
+                } else if (tabId === 'configuracion') {
+                    renderConfiguracion();
+                }
+            }
+        }
+
+        // ==================== MANTENIMIENTO PREVENTIVO ====================
+        
+        function initializeDailyLog() {
+            console.log('=== INITIALIZE DAILY LOG ===');
+            console.log('Current Date:', currentDate);
+            
+            // Recargar datos desde localStorage
+            sections = JSON.parse(localStorage.getItem('sections'));
+            activities = JSON.parse(localStorage.getItem('activities'));
+            dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+            
+            console.log('Sections loaded:', sections);
+            console.log('Activities loaded:', activities);
+            console.log('Daily logs loaded:', dailyLogs);
+            
+            if (!dailyLogs[currentDate]) {
+                console.log('Creating new daily log for', currentDate);
+                
+                dailyLogs[currentDate] = {
+                    date: currentDate,
+                    sections: {},
+                    novedades: []
+                };
+                
+                sections.forEach(section => {
+                    console.log('Initializing section:', section.name);
+                    
+                    dailyLogs[currentDate].sections[section.id] = {
+                        activities: {},
+                        photos: []
+                    };
+                    
+                    const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                    console.log(`Activities for ${section.name}:`, sectionActivities);
+                    
+                    sectionActivities.forEach(activity => {
+                        if (activity.frequency === '2 veces al dia') {
+                            dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`] = { value: null, status: null, observations: '', photos: [], user: null, timestamp: null };
+                            dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`] = { value: null, status: null, observations: '', photos: [], user: null, timestamp: null };
+                            console.log(`Added ${activity.name} (Mañana y Tarde)`);
+                        } else if (activity.frequency === 'Diario') {
+                            dailyLogs[currentDate].sections[section.id].activities[activity.id] = { value: null, status: null, observations: '', photos: [], user: null, timestamp: null };
+                            console.log(`Added ${activity.name} (Diario)`);
+                        }
+                    });
+                });
+                
+                localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+                console.log('Daily log saved to localStorage');
+            } else {
+                console.log('Daily log already exists for', currentDate);
+            }
+            
+            console.log('Final daily log:', dailyLogs[currentDate]);
+            console.log('=== INITIALIZE DAILY LOG COMPLETE ===');
+        }
+
+        function renderSections() {
+            console.log('=== RENDER SECTIONS ===');
+            
+            // Recargar datos desde localStorage
+            sections = JSON.parse(localStorage.getItem('sections'));
+            activities = JSON.parse(localStorage.getItem('activities'));
+            dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+            
+            console.log('Sections:', sections);
+            console.log('Activities:', activities);
+            console.log('Daily Logs:', dailyLogs);
+            console.log('Current Date:', currentDate);
+            
+            // IMPORTANTE: Asegurar que existe el log del día actual
+            if (!dailyLogs[currentDate]) {
+                console.warn('Daily log not found for current date, initializing...');
+                initializeDailyLog();
+                dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+            }
+            
+            const container = document.getElementById('sectionsContainer');
+            
+            if (!container) {
+                console.error('Container #sectionsContainer not found!');
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            if (!sections || sections.length === 0) {
+                console.error('No sections found!');
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay secciones configuradas</p>';
+                return;
+            }
+            
+            const sortedSections = sections.sort((a, b) => a.order - b.order);
+            console.log('Sorted Sections:', sortedSections);
+            
+            sortedSections.forEach(section => {
+                console.log('Processing section:', section);
+                
+                const sectionActivities = activities.filter(a => a.sectionId === section.id && 
+                    (a.frequency === '2 veces al dia' || a.frequency === 'Diario'));
+                
+                console.log(`Activities for section ${section.name}:`, sectionActivities);
+                
+                let totalFields = 0;
+                let completedFields = 0;
+                
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        totalFields += 2;
+                        if (dailyLogs[currentDate] && dailyLogs[currentDate].sections[section.id]) {
+                            const mananaData = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_manana`];
+                            const tardeData = dailyLogs[currentDate].sections[section.id].activities[`${activity.id}_tarde`];
+                            if (mananaData && (mananaData.value !== null || mananaData.status !== null)) completedFields++;
+                            if (tardeData && (tardeData.value !== null || tardeData.status !== null)) completedFields++;
+                        }
+                    } else {
+                        totalFields++;
+                        if (dailyLogs[currentDate] && dailyLogs[currentDate].sections[section.id]) {
+                            const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
+                            if (activityData && (activityData.value !== null || activityData.status !== null)) completedFields++;
+                        }
+                    }
+                });
+                
+                const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+                
+                console.log(`Section ${section.name}: ${completedFields}/${totalFields} = ${percentage}%`);
+                
+                const sectionCard = document.createElement('div');
+                sectionCard.className = 'section-card';
+                sectionCard.onclick = () => showSectionDetail(section.id);
+                sectionCard.innerHTML = `
+                    <div class="section-info">
+                        <h3>${section.icon} ${section.name}</h3>
+                        <div class="section-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="progress-text">${percentage}% (${completedFields}/${totalFields})</div>
+                        </div>
+                    </div>
+                    <div class="section-icon">${section.icon}</div>
+                `;
+                container.appendChild(sectionCard);
+            });
+
+            // Sección de Novedades
+            const novedadesCount = (dailyLogs[currentDate] && dailyLogs[currentDate].novedades) ? dailyLogs[currentDate].novedades.length : 0;
+            const novedadesCard = document.createElement('div');
+            novedadesCard.className = 'section-card';
+            novedadesCard.onclick = () => openReportNovedadModal();
+            novedadesCard.innerHTML = `
+                <div class="section-info">
+                    <h3>📝 Novedades</h3>
+                    <p style="font-size: 13px; color: #666; margin-top: 5px;">${novedadesCount} novedad(es) reportada(s)</p>
+                </div>
+                <div class="section-icon">📝</div>
+            `;
+            container.appendChild(novedadesCard);
+            
+            console.log('=== RENDER SECTIONS COMPLETE ===');
+        }
+
+        function showSectionDetail(sectionId) {
+            console.log('=== SHOW SECTION DETAIL ===');
+            console.log('Section ID:', sectionId);
+            
+            currentSectionId = sectionId;
+            
+            // Recargar datos
+            sections = JSON.parse(localStorage.getItem('sections'));
+            activities = JSON.parse(localStorage.getItem('activities'));
+            dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+            
+            // IMPORTANTE: Asegurar que existe el log del día actual
+            if (!dailyLogs[currentDate]) {
+                console.warn('Daily log not found in showSectionDetail, initializing...');
+                initializeDailyLog();
+                dailyLogs = JSON.parse(localStorage.getItem('dailyLogs'));
+            }
+            
+            const section = sections.find(s => s.id === sectionId);
+            console.log('Section found:', section);
+            
+            if (!section) {
+                console.error('Section not found!');
+                return;
+            }
+            
+            document.getElementById('sectionsList').style.display = 'none';
+            document.getElementById('sectionDetail').classList.add('active');
+            document.getElementById('sectionDetailTitle').textContent = `${section.icon} ${section.name}`;
+            
+            const content = document.getElementById('sectionDetailContent');
+            if (!content) {
+                console.error('Content container not found!');
+                return;
+            }
+            
+            content.innerHTML = '';
+            
+            const sectionActivities = activities
+                .filter(a => a.sectionId === sectionId && (a.frequency === '2 veces al dia' || a.frequency === 'Diario'))
+                .sort((a, b) => a.order - b.order);
+            
+            console.log('Section activities:', sectionActivities);
+            console.log('Number of activities:', sectionActivities.length);
+            
+            if (sectionActivities.length === 0) {
+                console.warn('No activities found for this section!');
+                content.innerHTML = '<p style="padding: 20px; color: #666;">No hay actividades configuradas para esta sección</p>';
+            } else {
+                sectionActivities.forEach(activity => {
+                    console.log('Rendering activity:', activity.name);
+                    if (activity.frequency === '2 veces al dia') {
+                        renderActivityField(content, activity, 'manana');
+                        renderActivityField(content, activity, 'tarde');
+                    } else {
+                        renderActivityField(content, activity);
+                    }
+                });
+            }
+
+            // Fotos de la sección
+            const photosDiv = document.createElement('div');
+            photosDiv.className = 'form-group';
+            photosDiv.innerHTML = `
+                <label>📸 Fotos de esta Sección (Opcional):</label>
+                <input type="file" id="sectionPhotos_${sectionId}" multiple accept="image/*" style="display: none;">
+                <div class="photo-upload" onclick="document.getElementById('sectionPhotos_${sectionId}').click()">
+                    <p>📷 Haz clic para agregar fotos</p>
+                </div>
+                <div id="sectionPhotosPreview_${sectionId}" class="photo-preview"></div>
+            `;
+            content.appendChild(photosDiv);
+
+            document.getElementById(`sectionPhotos_${sectionId}`).addEventListener('change', function(e) {
+                const preview = document.getElementById(`sectionPhotosPreview_${sectionId}`);
+                preview.innerHTML = '';
+                for (let file of e.target.files) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            console.log('=== SHOW SECTION DETAIL COMPLETE ===');
+        }
+
+        function renderActivityField(container, activity, turno = null) {
+            console.log('Rendering activity field:', activity.name, turno);
+            
+            const activityKey = turno ? `${activity.id}_${turno}` : activity.id;
+            
+            // Crear estructura de datos si no existe - nivel por nivel
+            if (!dailyLogs) {
+                console.error('dailyLogs is null or undefined!');
+                dailyLogs = {};
+            }
+            
+            if (!dailyLogs[currentDate]) {
+                console.warn('No daily log for current date, creating it...');
+                dailyLogs[currentDate] = {
+                    date: currentDate,
+                    sections: {},
+                    novedades: []
+                };
+            }
+            
+            if (!dailyLogs[currentDate].sections) {
+                console.warn('No sections object in daily log, creating it...');
+                dailyLogs[currentDate].sections = {};
+            }
+            
+            if (!dailyLogs[currentDate].sections[currentSectionId]) {
+                console.warn('No section data in daily log for section:', currentSectionId, 'creating it...');
+                dailyLogs[currentDate].sections[currentSectionId] = {
+                    activities: {},
+                    photos: []
+                };
+            }
+            
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities) {
+                console.warn('No activities object in section data, creating it...');
+                dailyLogs[currentDate].sections[currentSectionId].activities = {};
+            }
+            
+            // Crear la actividad específica si no existe
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities[activityKey]) {
+                console.warn('Creating activity entry for:', activityKey);
+                dailyLogs[currentDate].sections[currentSectionId].activities[activityKey] = {
+                    value: null,
+                    status: null,
+                    observations: '',
+                    photos: [],
+                    user: null,
+                    timestamp: null
+                };
+            }
+            
+            // Guardar cambios
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+            
+            const activityData = dailyLogs[currentDate].sections[currentSectionId].activities[activityKey];
+            const isCompleted = activityData.value !== null || activityData.status !== null;
+            
+            console.log('Activity data:', activityData);
+            console.log('Is completed:', isCompleted);
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
+            
+            const turnoLabel = turno ? ` (${turno === 'manana' ? 'Mañana' : 'Tarde'})` : '';
+            
+            if (activity.type === 'parametros') {
+                const value = activityData.value || '';
+                const hasAlert = value && activity.min && activity.max && (value < activity.min || value > activity.max);
+                
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
+                    <input type="number" step="0.1" id="activity_${activityKey}" 
+                           value="${value}" 
+                           class="${hasAlert ? 'alert' : (isCompleted ? 'completed' : 'pending')}"
+                           onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)">
+                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
+                    ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
+                `;
+            } else {
+                const status = activityData.status || '';
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel}:</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="activity_${activityKey}_ok" 
+                               ${status === 'ok' ? 'checked' : ''}
+                               onchange="updateActivityStatus(${activity.id}, '${turno || ''}', 'ok', this.checked)">
+                        <label for="activity_${activityKey}_ok">✓ OK</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones:</label>
+                        <input type="text" id="activity_${activityKey}_obs" 
+                               value="${activityData.observations || ''}"
+                               placeholder="Opcional"
+                               onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
+                    </div>
+                `;
+            }
+            
+            container.appendChild(fieldDiv);
+            console.log('Activity field added to container:', activity.name);
+        }
+
+        function updateActivityValue(activityId, turno, value) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities[activityKey]) {
+                dailyLogs[currentDate].sections[currentSectionId].activities[activityKey] = {};
+            }
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].value = parseFloat(value);
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].user = currentUser.fullName;
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].timestamp = new Date().toISOString();
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+        }
+
+        function updateActivityStatus(activityId, turno, status, checked) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities[activityKey]) {
+                dailyLogs[currentDate].sections[currentSectionId].activities[activityKey] = {};
+            }
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].status = checked ? status : null;
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].user = currentUser.fullName;
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].timestamp = new Date().toISOString();
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+        }
+
+        function updateActivityObservations(activityId, turno, observations) {
+            const activityKey = turno ? `${activityId}_${turno}` : activityId;
+            if (!dailyLogs[currentDate].sections[currentSectionId].activities[activityKey]) {
+                dailyLogs[currentDate].sections[currentSectionId].activities[activityKey] = {};
+            }
+            dailyLogs[currentDate].sections[currentSectionId].activities[activityKey].observations = observations;
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+        }
+
+        function backToSectionsList() {
+            document.getElementById('sectionDetail').classList.remove('active');
+            document.getElementById('sectionsList').style.display = 'block';
+            renderSections();
+        }
+
+        function saveSectionAndReturn() {
+            alert('✅ Sección guardada');
+            backToSectionsList();
+        }
+
+        function saveAllSections() {
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+            alert('✅ Todos los datos guardados exitosamente');
+        }
+
+        // ==================== NOVEDADES ====================
+        
+        function openReportNovedadModal() {
+            const modal = document.getElementById('reportNovedadModal');
+            const checkboxContainer = document.getElementById('novedadesCheckboxes');
+            checkboxContainer.innerHTML = '';
+            
+            novedadesPredefinidas.forEach(novedad => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-group';
+                div.innerHTML = `
+                    <input type="checkbox" id="novedad_${novedad.id}">
+                    <label for="novedad_${novedad.id}">${novedad.text}</label>
+                `;
+                checkboxContainer.appendChild(div);
+            });
+            
+            modal.style.display = 'block';
+        }
+
+        function closeReportNovedadModal() {
+            document.getElementById('reportNovedadModal').style.display = 'none';
+            document.getElementById('novedadCustomText').value = '';
+        }
+
+        function saveNovedad() {
+            const selectedNovedades = [];
+            novedadesPredefinidas.forEach(novedad => {
+                const checkbox = document.getElementById(`novedad_${novedad.id}`);
+                if (checkbox && checkbox.checked) {
+                    selectedNovedades.push(novedad.text);
+                }
+            });
+            
+            const customText = document.getElementById('novedadCustomText').value;
+            
+            if (selectedNovedades.length === 0 && !customText) {
+                alert('⚠️ Debes seleccionar al menos una novedad o escribir una descripción');
+                return;
+            }
+            
+            const novedadObj = {
+                id: Date.now(),
+                predefinidas: selectedNovedades,
+                descripcion: customText,
+                user: currentUser.fullName,
+                timestamp: new Date().toISOString()
+            };
+            
+            dailyLogs[currentDate].novedades.push(novedadObj);
+            localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+            
+            alert('✅ Novedad guardada');
+            closeReportNovedadModal();
+            renderSections();
+        }
+
+        // ==================== PLAN ====================
+        
+        function renderPlan() {
+            const container = document.getElementById('planContent');
+            container.innerHTML = '';
+            
+            const periodicActivities = activities.filter(a => 
+                !['2 veces al dia', 'Diario'].includes(a.frequency)
+            );
+            
+            if (periodicActivities.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay actividades periódicas configuradas</p>';
+                return;
+            }
+            
+            periodicActivities.forEach(activity => {
+                const section = sections.find(s => s.id === activity.sectionId);
+                const lastExecution = getLastExecution(activity.id);
+                const isOverdue = checkIfOverdue(activity.frequency, lastExecution);
+                const isApproved = planActivities.find(pa => pa.activityId === activity.id && pa.status === 'approved');
+                
+                const planItem = document.createElement('div');
+                planItem.className = `plan-item ${isOverdue ? 'overdue' : 'ontime'}`;
+                planItem.innerHTML = `
+                    <div class="plan-header">
+                        <div>
+                            <h4>${section.name} - ${activity.name}</h4>
+                            <span class="frequency-badge">${activity.frequency}</span>
+                            <span class="status-badge ${isOverdue ? 'status-overdue' : 'status-ontime'}">
+                                ${isOverdue ? '⚠️ Vencida' : '✓ Al día'}
+                            </span>
+                        </div>
+                        <div>
+                            ${!isApproved && (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 
+                                `<button class="btn btn-secondary btn-small" onclick="approveActivity(${activity.id})">✓ Aprobar</button>` : 
+                                isApproved ? '<span class="status-badge status-ontime">Aprobada</span>' : ''
+                            }
+                        </div>
+                    </div>
+                    <p style="font-size: 13px; color: #666; margin-top: 10px;">
+                        Última ejecución: ${lastExecution ? new Date(lastExecution).toLocaleDateString('es-ES') : 'Nunca'}
+                    </p>
+                `;
+                container.appendChild(planItem);
+            });
+        }
+
+        function getLastExecution(activityId) {
+            // Buscar en todos los logs la última vez que se ejecutó esta actividad
+            const dates = Object.keys(dailyLogs).sort().reverse();
+            for (let date of dates) {
+                const log = dailyLogs[date];
+                for (let sectionId in log.sections) {
+                    if (log.sections[sectionId].activities[activityId]) {
+                        const actData = log.sections[sectionId].activities[activityId];
+                        if (actData.value !== null || actData.status !== null) {
+                            return actData.timestamp;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function checkIfOverdue(frequency, lastExecution) {
+            if (!lastExecution) return true;
+            
+            const lastDate = new Date(lastExecution);
+            const today = new Date();
+            const daysDiff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+            
+            const frequencies = {
+                'Semanal': 7,
+                'Quincenal': 15,
+                'Mensual': 30,
+                'Trimestral': 90,
+                'Semestral': 180,
+                'Anual': 365
+            };
+            
+            return daysDiff > (frequencies[frequency] || 30);
+        }
+
+        function approveActivity(activityId) {
+            const existing = planActivities.find(pa => pa.activityId === activityId);
+            if (!existing) {
+                planActivities.push({
+                    activityId: activityId,
+                    status: 'approved',
+                    approvedBy: currentUser.fullName,
+                    approvedDate: new Date().toISOString()
+                });
+                localStorage.setItem('planActivities', JSON.stringify(planActivities));
+            }
+            
+            // Agregar la actividad al log diario actual
+            const activity = activities.find(a => a.id === activityId);
+            if (activity && !dailyLogs[currentDate].sections[activity.sectionId].activities[activityId]) {
+                dailyLogs[currentDate].sections[activity.sectionId].activities[activityId] = {
+                    value: null,
+                    status: null,
+                    observations: '',
+                    photos: [],
+                    user: null,
+                    timestamp: null
+                };
+                localStorage.setItem('dailyLogs', JSON.stringify(dailyLogs));
+            }
+            
+            alert('✅ Actividad aprobada y agregada al mantenimiento preventivo');
+            renderPlan();
+        }
+
+        // ==================== REPORTE DIARIO ====================
+        
+        function renderReporteDiario() {
+            document.getElementById('reportDate').textContent = new Date(currentDate).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const todayLog = dailyLogs[currentDate];
+            let totalActivities = 0;
+            let completedActivities = 0;
+            
+            // Contar actividades
+            for (let sectionId in todayLog.sections) {
+                for (let activityKey in todayLog.sections[sectionId].activities) {
+                    totalActivities++;
+                    const actData = todayLog.sections[sectionId].activities[activityKey];
+                    if (actData.value !== null || actData.status !== null) {
+                        completedActivities++;
+                    }
+                }
+            }
+            
+            const percentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+            
+            document.getElementById('totalActivities').textContent = totalActivities;
+            document.getElementById('completedActivities').textContent = completedActivities;
+            document.getElementById('pendingActivities').textContent = totalActivities - completedActivities;
+            document.getElementById('completionPercentage').textContent = percentage + '%';
+            
+            const content = document.getElementById('reportContent');
+            content.innerHTML = '';
+            
+            sections.forEach(section => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'report-summary';
+                sectionDiv.innerHTML = `<h3>${section.icon} ${section.name}</h3>`;
+                
+                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                sectionActivities.forEach(activity => {
+                    const activityKeys = activity.frequency === '2 veces al dia' 
+                        ? [`${activity.id}_manana`, `${activity.id}_tarde`]
+                        : [activity.id];
+                    
+                    activityKeys.forEach(key => {
+                        const actData = todayLog.sections[section.id].activities[key];
+                        if (!actData) return;
+                        
+                        const turno = key.includes('_manana') ? ' (Mañana)' : key.includes('_tarde') ? ' (Tarde)' : '';
+                        
+                        if (activity.showInSummary === 'detalle' && actData.value !== null) {
+                            const p = document.createElement('p');
+                            p.innerHTML = `<strong>${activity.name}${turno}:</strong> ${actData.value} ${activity.unit || ''} 
+                                          <small style="color: #666;">(${actData.user} - ${new Date(actData.timestamp).toLocaleTimeString('es-ES')})</small>`;
+                            sectionDiv.appendChild(p);
+                        } else if (activity.showInSummary === 'estado' && actData.status !== null) {
+                            const p = document.createElement('p');
+                            p.innerHTML = `<strong>${activity.name}${turno}:</strong> ${actData.status === 'ok' ? '✓ OK' : '✗ No OK'} 
+                                          <small style="color: #666;">(${actData.user})</small>`;
+                            if (actData.observations) {
+                                p.innerHTML += `<br><small>Observaciones: ${actData.observations}</small>`;
+                            }
+                            sectionDiv.appendChild(p);
+                        }
+                    });
+                });
+                
+                if (sectionDiv.children.length > 1) {
+                    content.appendChild(sectionDiv);
+                }
+            });
+            
+            // Novedades
+            if (todayLog.novedades.length > 0) {
+                const novedadesDiv = document.createElement('div');
+                novedadesDiv.className = 'report-summary';
+                novedadesDiv.innerHTML = '<h3>📝 Novedades</h3>';
+                
+                todayLog.novedades.forEach(novedad => {
+                    const novedadItem = document.createElement('div');
+                    novedadItem.className = 'novedad-item';
+                    let html = '';
+                    if (novedad.predefinidas.length > 0) {
+                        html += `<p><strong>Eventos:</strong> ${novedad.predefinidas.join(', ')}</p>`;
+                    }
+                    if (novedad.descripcion) {
+                        html += `<p><strong>Descripción:</strong> ${novedad.descripcion}</p>`;
+                    }
+                    html += `<p><small style="color: #666;">${novedad.user} - ${new Date(novedad.timestamp).toLocaleString('es-ES')}</small></p>`;
+                    novedadItem.innerHTML = html;
+                    novedadesDiv.appendChild(novedadItem);
+                });
+                
+                content.appendChild(novedadesDiv);
+            }
+        }
+
+        function shareReport() {
+            const todayLog = dailyLogs[currentDate];
+            let text = `📊 REPORTE DIARIO HSB APP
+Fecha: ${new Date(currentDate).toLocaleDateString('es-ES')}
+
+`;
+            
+            sections.forEach(section => {
+                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                let sectionText = '';
+                
+                sectionActivities.forEach(activity => {
+                    const activityKeys = activity.frequency === '2 veces al dia' 
+                        ? [`${activity.id}_manana`, `${activity.id}_tarde`]
+                        : [activity.id];
+                    
+                    activityKeys.forEach(key => {
+                        const actData = todayLog.sections[section.id].activities[key];
+                        if (!actData || (actData.value === null && actData.status === null)) return;
+                        
+                        const turno = key.includes('_manana') ? ' (Mañana)' : key.includes('_tarde') ? ' (Tarde)' : '';
+                        
+                        if (activity.showInSummary === 'detalle' && actData.value !== null) {
+                            sectionText += `${activity.name}${turno}: ${actData.value} ${activity.unit || ''}\n`;
+                        } else if (activity.showInSummary === 'estado' && actData.status !== null) {
+                            sectionText += `${activity.name}${turno}: ${actData.status === 'ok' ? '✓ OK' : '✗ No OK'}\n`;
+                        }
+                    });
+                });
+                
+                if (sectionText) {
+                    text += `${section.icon} ${section.name.toUpperCase()}\n${sectionText}\n`;
+                }
+            });
+            
+            if (todayLog.novedades.length > 0) {
+                text += '📝 NOVEDADES\n';
+                todayLog.novedades.forEach(novedad => {
+                    if (novedad.predefinidas.length > 0) {
+                        text += `• ${novedad.predefinidas.join(', ')}\n`;
+                    }
+                    if (novedad.descripcion) {
+                        text += `• ${novedad.descripcion}\n`;
+                    }
+                });
+            }
+            
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function downloadReportPDF() {
+            alert('📥 Función de descarga PDF en desarrollo. Por ahora puedes usar el botón de compartir para enviar el reporte por WhatsApp.');
+        }
+
+        // ==================== HISTORIAL ====================
+        
+        function renderHistorial() {
+            const container = document.getElementById('historialContent');
+            container.innerHTML = '';
+            
+            const dates = Object.keys(dailyLogs).sort().reverse();
+            
+            if (dates.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay registros en el historial</p>';
+                return;
+            }
+            
+            dates.forEach(date => {
+                const log = dailyLogs[date];
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'report-summary';
+                dateDiv.style.cursor = 'pointer';
+                dateDiv.onclick = () => toggleHistoryDetail(date);
+                
+                let totalActivities = 0;
+                let completedActivities = 0;
+                
+                for (let sectionId in log.sections) {
+                    for (let activityKey in log.sections[sectionId].activities) {
+                        totalActivities++;
+                        const actData = log.sections[sectionId].activities[activityKey];
+                        if (actData.value !== null || actData.status !== null) {
+                            completedActivities++;
+                        }
+                    }
+                }
+                
+                const percentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+                
+                dateDiv.innerHTML = `
+                    <div class="summary-header">
+                        <h3>📅 ${new Date(date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                        <div>Completado: ${percentage}% (${completedActivities}/${totalActivities})</div>
+                    </div>
+                    <div id="historyDetail_${date}" class="hidden"></div>
+                `;
+                
+                container.appendChild(dateDiv);
+            });
+        }
+
+        function toggleHistoryDetail(date) {
+            const detailDiv = document.getElementById(`historyDetail_${date}`);
+            detailDiv.classList.toggle('hidden');
+            
+            if (!detailDiv.classList.contains('hidden') && detailDiv.innerHTML === '') {
+                const log = dailyLogs[date];
+                let html = '';
+                
+                sections.forEach(section => {
+                    const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                    let sectionHtml = '';
+                    
+                    sectionActivities.forEach(activity => {
+                        const activityKeys = activity.frequency === '2 veces al dia' 
+                            ? [`${activity.id}_manana`, `${activity.id}_tarde`]
+                            : [activity.id];
+                        
+                        activityKeys.forEach(key => {
+                            const actData = log.sections[section.id].activities[key];
+                            if (!actData || (actData.value === null && actData.status === null)) return;
+                            
+                            const turno = key.includes('_manana') ? ' (Mañana)' : key.includes('_tarde') ? ' (Tarde)' : '';
+                            
+                            if (actData.value !== null) {
+                                sectionHtml += `<p><strong>${activity.name}${turno}:</strong> ${actData.value} ${activity.unit || ''} 
+                                              <small style="color: #666;">(${actData.user} - ${new Date(actData.timestamp).toLocaleTimeString('es-ES')})</small></p>`;
+                            } else if (actData.status !== null) {
+                                sectionHtml += `<p><strong>${activity.name}${turno}:</strong> ${actData.status === 'ok' ? '✓ OK' : '✗ No OK'} 
+                                              <small style="color: #666;">(${actData.user})</small>`;
+                                if (actData.observations) {
+                                    sectionHtml += `<br><small>Obs: ${actData.observations}</small>`;
+                                }
+                                sectionHtml += '</p>';
+                            }
+                        });
+                    });
+                    
+                    if (sectionHtml) {
+                        html += `<h4 style="margin-top: 15px;">${section.icon} ${section.name}</h4>${sectionHtml}`;
+                    }
+                });
+                
+                if (log.novedades.length > 0) {
+                    html += '<h4 style="margin-top: 15px;">📝 Novedades</h4>';
+                    log.novedades.forEach(novedad => {
+                        html += '<div class="novedad-item">';
+                        if (novedad.predefinidas.length > 0) {
+                            html += `<p><strong>Eventos:</strong> ${novedad.predefinidas.join(', ')}</p>`;
+                        }
+                        if (novedad.descripcion) {
+                            html += `<p><strong>Descripción:</strong> ${novedad.descripcion}</p>`;
+                        }
+                        html += `<p><small style="color: #666;">${novedad.user} - ${new Date(novedad.timestamp).toLocaleString('es-ES')}</small></p>`;
+                        html += '</div>';
+                    });
+                }
+                
+                detailDiv.innerHTML = html;
+            }
+        }
+
+        // ==================== CONFIGURACIÓN ====================
+        
+        function renderConfiguracion() {
+            renderUsersList();
+            renderTabsOrderList();
+            renderSectionsList();
+            renderActivitiesList();
+            renderNovedadesList();
+        }
+
+        // Usuarios
+        function renderUsersList() {
+            const container = document.getElementById('usersList');
+            container.innerHTML = '';
+            
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.innerHTML = `
+                    <div class="user-card-header">
+                        <div>
+                            <h4>${user.fullName}</h4>
+                            <p style="font-size: 13px; color: #666;">Usuario: ${user.username}</p>
+                            <span class="role-badge role-${user.role}">${user.role === 'admin' ? 'Administrador' : user.role === 'supervisor' ? 'Supervisor' : 'Operador'}</span>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary btn-small" onclick="editUser(${user.id})">✏️ Editar</button>
+                            ${user.id > 3 ? `<button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">🗑️</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="permissions-grid" style="margin-top: 10px;">
+                        <small style="color: #666;">Pestañas: ${user.permissions.map(p => tabs.find(t => t.id === p)?.name.replace(/[📊🔧📅📋⚙️]/g, '').trim()).join(', ')}</small>
+                    </div>
+                `;
+                container.appendChild(userCard);
+            });
+        }
+
+        function openUserModal(userId = null) {
+            const modal = document.getElementById('userModal');
+            const permissionsContainer = document.getElementById('userPermissions');
+            permissionsContainer.innerHTML = '';
+            
+            tabs.forEach(tab => {
+                const div = document.createElement('div');
+                div.className = 'permission-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="perm_${tab.id}" value="${tab.id}">
+                    <label for="perm_${tab.id}">${tab.name}</label>
+                `;
+                permissionsContainer.appendChild(div);
+            });
+            
+            if (userId) {
+                const user = users.find(u => u.id === userId);
+                document.getElementById('userModalTitle').textContent = 'Editar Usuario';
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('userFullName').value = user.fullName;
+                document.getElementById('userUsername').value = user.username;
+                document.getElementById('userPassword').value = user.password;
+                document.getElementById('userRole').value = user.role;
+                user.permissions.forEach(perm => {
+                    const checkbox = document.getElementById(`perm_${perm}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            } else {
+                document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
+                document.getElementById('userForm').reset();
+                document.getElementById('editUserId').value = '';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const permissions = [];
+            tabs.forEach(tab => {
+                const checkbox = document.getElementById(`perm_${tab.id}`);
+                if (checkbox && checkbox.checked) permissions.push(tab.id);
+            });
+            
+            const userData = {
+                fullName: document.getElementById('userFullName').value,
+                username: document.getElementById('userUsername').value,
+                password: document.getElementById('userPassword').value,
+                role: document.getElementById('userRole').value,
+                permissions: permissions
+            };
+            
+            if (userId) {
+                const index = users.findIndex(u => u.id == userId);
+                users[index] = { ...users[index], ...userData };
+            } else {
+                users.push({ id: Date.now(), ...userData });
+            }
+            
+            localStorage.setItem('users', JSON.stringify(users));
+            renderUsersList();
+            closeUserModal();
+            alert('✅ Usuario guardado');
+        });
+
+        function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        function deleteUser(userId) {
+            if (confirm('¿Eliminar este usuario?')) {
+                users = users.filter(u => u.id !== userId);
+                localStorage.setItem('users', JSON.stringify(users));
+                renderUsersList();
+                alert('✅ Usuario eliminado');
+            }
+        }
+
+        // Orden de Pestañas
+        function renderTabsOrderList() {
+            const container = document.getElementById('tabsOrderList');
+            container.innerHTML = '';
+            
+            const sortedTabs = tabs.sort((a, b) => a.order - b.order);
+            
+            sortedTabs.forEach((tab, index) => {
+                const tabDiv = document.createElement('div');
+                tabDiv.className = 'activity-card';
+                tabDiv.innerHTML = `
+                    <div class="activity-card-header">
+                        <div>${tab.name}</div>
+                        <div class="order-controls">
+                            ${index > 0 ? `<button class="btn-order" onclick="moveTab(${tab.id}, 'up')">↑</button>` : ''}
+                            ${index < sortedTabs.length - 1 ? `<button class="btn-order" onclick="moveTab(${tab.id}, 'down')">↓</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(tabDiv);
+            });
+        }
+
+        function moveTab(tabId, direction) {
+            const index = tabs.findIndex(t => t.id === tabId);
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            
+            if (newIndex >= 0 && newIndex < tabs.length) {
+                const temp = tabs[index].order;
+                tabs[index].order = tabs[newIndex].order;
+                tabs[newIndex].order = temp;
+                renderTabsOrderList();
+            }
+        }
+
+        function saveTabsOrder() {
+            localStorage.setItem('tabs', JSON.stringify(tabs));
+            alert('✅ Orden guardado. Recarga la página para ver los cambios.');
+        }
+
+        // Secciones
+        function renderSectionsList() {
+            const container = document.getElementById('sectionsList2');
+            container.innerHTML = '';
+            
+            const sortedSections = sections.sort((a, b) => a.order - b.order);
+            
+            sortedSections.forEach((section, index) => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'activity-card';
+                sectionDiv.innerHTML = `
+                    <div class="activity-card-header">
+                        <div>
+                            <h4>${section.icon} ${section.name}</h4>
+                        </div>
+                        <div>
+                            <div class="order-controls">
+                                ${index > 0 ? `<button class="btn-order" onclick="moveSection(${section.id}, 'up')">↑</button>` : ''}
+                                ${index < sortedSections.length - 1 ? `<button class="btn-order" onclick="moveSection(${section.id}, 'down')">↓</button>` : ''}
+                            </div>
+                            <button class="btn btn-secondary btn-small" onclick="editSection(${section.id})">✏️</button>
+                            ${section.id > 4 ? `<button class="btn btn-danger btn-small" onclick="deleteSection(${section.id})">🗑️</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(sectionDiv);
+            });
+        }
+
+        function moveSection(sectionId, direction) {
+            const index = sections.findIndex(s => s.id === sectionId);
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            
+            if (newIndex >= 0 && newIndex < sections.length) {
+                const temp = sections[index].order;
+                sections[index].order = sections[newIndex].order;
+                sections[newIndex].order = temp;
+                renderSectionsList();
+            }
+        }
+
+        function openSectionModal(sectionId = null) {
+            const modal = document.getElementById('sectionModal');
+            
+            if (sectionId) {
+                const section = sections.find(s => s.id === sectionId);
+                document.getElementById('sectionModalTitle').textContent = 'Editar Sección';
+                document.getElementById('editSectionId').value = section.id;
+                document.getElementById('sectionName').value = section.name;
+                document.getElementById('sectionIcon').value = section.icon;
+            } else {
+                document.getElementById('sectionModalTitle').textContent = 'Nueva Sección';
+                document.getElementById('sectionForm').reset();
+                document.getElementById('editSectionId').value = '';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeSectionModal() {
+            document.getElementById('sectionModal').style.display = 'none';
+        }
+
+        document.getElementById('sectionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const sectionId = document.getElementById('editSectionId').value;
+            const sectionData = {
+                name: document.getElementById('sectionName').value,
+                icon: document.getElementById('sectionIcon').value || '📂'
+            };
+            
+            if (sectionId) {
+                const index = sections.findIndex(s => s.id == sectionId);
+                sections[index] = { ...sections[index], ...sectionData };
+            } else {
+                sections.push({ 
+                    id: Date.now(), 
+                    ...sectionData,
+                    order: sections.length + 1
+                });
+            }
+            
+            localStorage.setItem('sections', JSON.stringify(sections));
+            renderSectionsList();
+            closeSectionModal();
+            alert('✅ Sección guardada');
+        });
+
+        function editSection(sectionId) {
+            openSectionModal(sectionId);
+        }
+
+        function deleteSection(sectionId) {
+            if (confirm('¿Eliminar esta sección? Se eliminarán también sus actividades.')) {
+                sections = sections.filter(s => s.id !== sectionId);
+                activities = activities.filter(a => a.sectionId !== sectionId);
+                localStorage.setItem('sections', JSON.stringify(sections));
+                localStorage.setItem('activities', JSON.stringify(activities));
+                renderSectionsList();
+                renderActivitiesList();
+                alert('✅ Sección eliminada');
+            }
+        }
+
+        // Actividades
+        function renderActivitiesList() {
+            const container = document.getElementById('activitiesList');
+            container.innerHTML = '';
+            
+            sections.forEach(section => {
+                const sectionActivities = activities.filter(a => a.sectionId === section.id).sort((a, b) => a.order - b.order);
+                
+                if (sectionActivities.length > 0) {
+                    const sectionHeader = document.createElement('h4');
+                    sectionHeader.style.cssText = 'color: #667eea; margin-top: 20px; margin-bottom: 10px;';
+                    sectionHeader.textContent = `${section.icon} ${section.name}`;
+                    container.appendChild(sectionHeader);
+                    
+                    sectionActivities.forEach((activity, index) => {
+                        const activityDiv = document.createElement('div');
+                        activityDiv.className = 'activity-card';
+                        activityDiv.innerHTML = `
+                            <div class="activity-card-header">
+                                <div>
+                                    <h4>${activity.name}</h4>
+                                    <small style="color: #666;">
+                                        ${activity.type === 'parametros' ? '📊 Parámetros' : '✓ Chequeo'} | 
+                                        ${activity.frequency} | 
+                                        ${activity.showInSummary === 'detalle' ? 'Detalle' : 'Estado'}
+                                    </small>
+                                </div>
+                                <div>
+                                    <div class="order-controls">
+                                        ${index > 0 ? `<button class="btn-order" onclick="moveActivity(${activity.id}, 'up')">↑</button>` : ''}
+                                        ${index < sectionActivities.length - 1 ? `<button class="btn-order" onclick="moveActivity(${activity.id}, 'down')">↓</button>` : ''}
+                                    </div>
+                                    <button class="btn btn-secondary btn-small" onclick="editActivity(${activity.id})">✏️</button>
+                                    <button class="btn btn-danger btn-small" onclick="deleteActivity(${activity.id})">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(activityDiv);
+                    });
+                }
+            });
+        }
+
+        function moveActivity(activityId, direction) {
+            const activity = activities.find(a => a.id === activityId);
+            const sectionActivities = activities.filter(a => a.sectionId === activity.sectionId).sort((a, b) => a.order - b.order);
+            const index = sectionActivities.findIndex(a => a.id === activityId);
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            
+            if (newIndex >= 0 && newIndex < sectionActivities.length) {
+                const temp = sectionActivities[index].order;
+                sectionActivities[index].order = sectionActivities[newIndex].order;
+                sectionActivities[newIndex].order = temp;
+                
+                const globalIndex1 = activities.findIndex(a => a.id === sectionActivities[index].id);
+                const globalIndex2 = activities.findIndex(a => a.id === sectionActivities[newIndex].id);
+                activities[globalIndex1].order = sectionActivities[index].order;
+                activities[globalIndex2].order = sectionActivities[newIndex].order;
+                
+                localStorage.setItem('activities', JSON.stringify(activities));
+                renderActivitiesList();
+            }
+        }
+
+        function toggleActivityFields() {
+            const type = document.getElementById('activityType').value;
+            const parametrosFields = document.getElementById('parametrosFields');
+            parametrosFields.classList.toggle('hidden', type !== 'parametros');
+        }
+
+        function openActivityModal(activityId = null) {
+            const modal = document.getElementById('activityModal');
+            const sectionSelect = document.getElementById('activitySection');
+            sectionSelect.innerHTML = '<option value="">Seleccionar...</option>';
+            sections.forEach(section => {
+                sectionSelect.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+            });
+            
+            if (activityId) {
+                const activity = activities.find(a => a.id === activityId);
+                document.getElementById('activityModalTitle').textContent = 'Editar Actividad';
+                document.getElementById('editActivityId').value = activity.id;
+                document.getElementById('activitySection').value = activity.sectionId;
+                document.getElementById('activityName').value = activity.name;
+                document.getElementById('activityType').value = activity.type;
+                document.getElementById('activityUnit').value = activity.unit || '';
+                document.getElementById('activityMin').value = activity.min || '';
+                document.getElementById('activityMax').value = activity.max || '';
+                document.getElementById('activityFrequency').value = activity.frequency;
+                document.getElementById('activityShowInSummary').value = activity.showInSummary;
+                toggleActivityFields();
+            } else {
+                document.getElementById('activityModalTitle').textContent = 'Nueva Actividad';
+                document.getElementById('activityForm').reset();
+                document.getElementById('editActivityId').value = '';
+                document.getElementById('parametrosFields').classList.add('hidden');
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeActivityModal() {
+            document.getElementById('activityModal').style.display = 'none';
+        }
+
+        document.getElementById('activityForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const activityId = document.getElementById('editActivityId').value;
+            const type = document.getElementById('activityType').value;
+            
+            const activityData = {
+                sectionId: parseInt(document.getElementById('activitySection').value),
+                name: document.getElementById('activityName').value,
+                type: type,
+                frequency: document.getElementById('activityFrequency').value,
+                showInSummary: document.getElementById('activityShowInSummary').value
+            };
+            
+            if (type === 'parametros') {
+                activityData.unit = document.getElementById('activityUnit').value;
+                activityData.min = parseFloat(document.getElementById('activityMin').value) || null;
+                activityData.max = parseFloat(document.getElementById('activityMax').value) || null;
+            }
+            
+            if (activityId) {
+                const index = activities.findIndex(a => a.id == activityId);
+                activities[index] = { ...activities[index], ...activityData };
+            } else {
+                const sectionActivities = activities.filter(a => a.sectionId === activityData.sectionId);
+                activities.push({ 
+                    id: Date.now(), 
+                    ...activityData,
+                    order: sectionActivities.length + 1
+                });
+            }
+            
+            localStorage.setItem('activities', JSON.stringify(activities));
+            renderActivitiesList();
+            closeActivityModal();
+            alert('✅ Actividad guardada');
+        });
+
+        function editActivity(activityId) {
+            openActivityModal(activityId);
+        }
+
+        function deleteActivity(activityId) {
+            if (confirm('¿Eliminar esta actividad?')) {
+                activities = activities.filter(a => a.id !== activityId);
+                localStorage.setItem('activities', JSON.stringify(activities));
+                renderActivitiesList();
+                alert('✅ Actividad eliminada');
+            }
+        }
+
+        // Novedades Predefinidas
+        function renderNovedadesList() {
+            const container = document.getElementById('novedadesList');
+            container.innerHTML = '';
+            
+            novedadesPredefinidas.forEach(novedad => {
+                const novedadDiv = document.createElement('div');
+                novedadDiv.className = 'activity-card';
+                novedadDiv.innerHTML = `
+                    <div class="activity-card-header">
+                        <div><h4>${novedad.text}</h4></div>
+                        <div>
+                            <button class="btn btn-danger btn-small" onclick="deleteNovedad(${novedad.id})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(novedadDiv);
+            });
+        }
+
+        function openNovedadModal() {
+            document.getElementById('novedadModal').style.display = 'block';
+        }
+
+        function closeNovedadModal() {
+            document.getElementById('novedadModal').style.display = 'none';
+            document.getElementById('novedadForm').reset();
+        }
+
+        document.getElementById('novedadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            novedadesPredefinidas.push({
+                id: Date.now(),
+                text: document.getElementById('novedadText').value
+            });
+            
+            localStorage.setItem('novedadesPredefinidas', JSON.stringify(novedadesPredefinidas));
+            renderNovedadesList();
+            closeNovedadModal();
+            alert('✅ Novedad guardada');
+        });
+
+        function deleteNovedad(novedadId) {
+            if (confirm('¿Eliminar esta novedad predefinida?')) {
+                novedadesPredefinidas = novedadesPredefinidas.filter(n => n.id !== novedadId);
+                localStorage.setItem('novedadesPredefinidas', JSON.stringify(novedadesPredefinidas));
+                renderNovedadesList();
+                alert('✅ Novedad eliminada');
+            }
+        }
+
+        // Cerrar modales al hacer clic fuera
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
             }
         }
     </script>
 </body>
-</html>
+</html>    
