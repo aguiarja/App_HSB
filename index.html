@@ -1681,11 +1681,18 @@
             // Actualizar alerta inmediatamente en el DOM
             const selectElement = document.getElementById(`activity_${activityKey}_oil`);
             if (selectElement) {
-                const parentDiv = selectElement.parentElement;
+                const fieldDiv = selectElement.closest('.activity-field');
                 const hasAlert = level === '1/2' || level === 'vacio';
                 
+                // Actualizar clase del fieldDiv (para el color de fondo)
+                if (level) {
+                    fieldDiv.className = 'activity-field completed';
+                } else {
+                    fieldDiv.className = 'activity-field pending';
+                }
+                
                 // Buscar si ya existe un div de alerta
-                let alertDiv = parentDiv.querySelector('.alert-message');
+                let alertDiv = fieldDiv.querySelector('.alert-message');
                 
                 if (hasAlert) {
                     // Si debe haber alerta y no existe, crearla
