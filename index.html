@@ -1104,8 +1104,10 @@
             renderTabs();
             initializeDailyLog();
             
-            // Iniciar reloj del sistema
-            startSystemClock();
+            // Iniciar reloj del sistema con pequeño delay para asegurar DOM
+            setTimeout(() => {
+                startSystemClock();
+            }, 100);
         }
 
         // ==================== TABS ====================
@@ -1235,7 +1237,13 @@
                 return;
             }
 
-            sections.forEach(section => {
+            // Ordenar secciones por campo 'order'
+            const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+            
+            console.log('📊 Secciones a renderizar:', sortedSections.length);
+            sortedSections.forEach(s => console.log(`  - ${s.order}: ${s.name}`));
+
+            sortedSections.forEach(section => {
                 let totalFields = 0;
                 let completedFields = 0;
 
@@ -1514,12 +1522,43 @@
             
             showSyncIndicator('💾 Guardando...', 'syncing');
             
-            // Re-renderizar tanto secciones como la vista detallada para actualizar colores
+            // Actualizar alerta inmediatamente en el DOM
+            const selectElement = document.getElementById(`activity_${activityKey}_oil`);
+            if (selectElement) {
+                const parentDiv = selectElement.parentElement;
+                const hasAlert = level === '1/2' || level === 'vacio';
+                
+                // Buscar si ya existe un div de alerta
+                let alertDiv = parentDiv.querySelector('.alert-message');
+                
+                if (hasAlert) {
+                    // Si debe haber alerta y no existe, crearla
+                    if (!alertDiv) {
+                        alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert-message';
+                        alertDiv.textContent = '⚠️ Nivel bajo - Umbral mínimo';
+                        selectElement.insertAdjacentElement('afterend', alertDiv);
+                    }
+                } else {
+                    // Si no debe haber alerta y existe, eliminarla
+                    if (alertDiv) {
+                        alertDiv.remove();
+                    }
+                }
+                
+                // Actualizar borde del select
+                if (level) {
+                    selectElement.style.border = '2px solid #28a745';
+                    selectElement.className = 'completed';
+                } else {
+                    selectElement.style.border = '2px solid #ffc107';
+                    selectElement.className = 'pending';
+                }
+            }
+            
+            // Re-renderizar secciones para actualizar porcentaje
             setTimeout(() => {
                 renderSections();
-                if (currentSectionId) {
-                    showSectionDetail(currentSectionId);
-                }
             }, 300);
         }
 
@@ -1775,6 +1814,11 @@
         
         function renderReporteDiario() {
             const container = document.getElementById('reportContent');
+            
+            if (!dailyLogs[currentDate]) {
+                container.innerHTML = '<div class="report-summary"><p>No hay datos para el día actual. Completa algunas actividades primero.</p></div>';
+                return;
+            }
             
             let fullHTML = '';
             
@@ -2680,9 +2724,13 @@
         function renderActivitiesConfig(container) {
             let html = '<h4 style="color: #2a5298; margin-bottom: 15px;">Gestión de Actividades</h4>';
             
-            // Agrupar por sección
-            sections.forEach(section => {
-                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+            // Agrupar por sección y ordenar
+            const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+            
+            sortedSections.forEach(section => {
+                const sectionActivities = activities
+                    .filter(a => a.sectionId === section.id)
+                    .sort((a, b) => a.order - b.order); // Ordenar por order
                 
                 if (sectionActivities.length > 0) {
                     html += `<h5 style="color: #667eea; margin-top: 20px; margin-bottom: 10px;">${section.icon} ${section.name}</h5>`;
@@ -2695,7 +2743,8 @@
                                         <strong style="font-size: 13px;">${activity.name}</strong>
                                         <p style="font-size: 11px; color: #666; margin-top: 3px;">
                                             Tipo: ${activity.type} | Frecuencia: ${activity.frequency}
-                                            ${activity.min && activity.max ? ` | Rango: ${activity.min}-${activity.max}` : ''}
+                                            ${activity.min !== null && activity.min !== undefined ? ` | Min: ${activity.min}` : ''}
+                                            ${activity.max !== null && activity.max !== undefined ? ` | Max: ${activity.max}` : ''}
                                         </p>
                                     </div>
                                     <div style="white-space: nowrap;">
@@ -2713,7 +2762,7 @@
                                                        font-size: 11px; margin-right: 3px;">
                                             ↓
                                         </button>
-                                        <button onclick="alert('Editar: ${activity.name}')" 
+                                        <button onclick="editActivity(${activity.id})" 
                                                 style="background: #ffc107; color: white; border: none; 
                                                        padding: 4px 8px; border-radius: 3px; cursor: pointer; 
                                                        font-size: 11px; margin-right: 3px;">
@@ -3022,6 +3071,32 @@
             await activitiesRef.set(activities);
             
             showSyncIndicator('✓ Actividad eliminada', 'synced');
+            renderConfiguracion();
+        }
+        
+        async function editActivity(activityId) {
+            const activity = activities.find(a => a.id === activityId);
+            if (!activity) return;
+            
+            // Editar nombre
+            const newName = prompt('Nombre de la actividad:', activity.name);
+            if (!newName || newName.trim() === '') return;
+            
+            activity.name = newName.trim();
+            
+            // Si es parámetros, permitir editar rango
+            if (activity.type === 'parametros') {
+                const newUnit = prompt('Unidad:', activity.unit || '');
+                const newMin = prompt('Valor mínimo:', activity.min !== null && activity.min !== undefined ? activity.min : '');
+                const newMax = prompt('Valor máximo:', activity.max !== null && activity.max !== undefined ? activity.max : '');
+                
+                activity.unit = newUnit ? newUnit.trim() : '';
+                activity.min = newMin !== '' ? parseFloat(newMin) : null;
+                activity.max = newMax !== '' ? parseFloat(newMax) : null;
+            }
+            
+            await activitiesRef.set(activities);
+            showSyncIndicator('✓ Actividad editada', 'synced');
             renderConfiguracion();
         }
 
