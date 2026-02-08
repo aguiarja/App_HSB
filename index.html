@@ -917,10 +917,9 @@
         function getOperationalDate() {
             const now = new Date();
             const hour = now.getHours();
-            const minutes = now.getMinutes();
             
-            // Si son antes de las 12:05 PM, usar el día anterior
-            if (hour < 12 || (hour === 12 && minutes < 5)) {
+            // Si son antes de las 06:00 AM, usar el día anterior
+            if (hour < 6) {
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
                 return yesterday.toISOString().split('T')[0];
@@ -2080,146 +2079,195 @@
                 </div>
             `;
 
-            // Mostrar detalles por sección
+            // Mostrar detalles por sección según configuración showInSummary
             sections.forEach(section => {
                 // Verificar que la sección existe en el dailyLog
                 if (!dailyLogs[dateStr].sections[section.id]) {
                     return; // Skip esta sección
                 }
                 
-                const sectionActivities = activities.filter(a => a.sectionId === section.id && (a.showInSummary === 'detalle' || a.showInSummary === 'estado'));
+                // Usar showInSummary de la sección (por defecto "resumido" si no existe)
+                const showInSummary = section.showInSummary || 'resumido';
                 
-                if (sectionActivities.length > 0) {
-                    let sectionHasData = false;
-                    let sectionHTML = '';
-                    
-                    sectionActivities.forEach(activity => {
-                        if (activity.frequency === '2 veces al dia') {
-                            const dataMorning = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_manana`];
-                            const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[`${activity.id}_tarde`];
-                            
-                            if (activity.type === 'parametros') {
-                                // Manejo de parámetros numéricos
-                                if (dataMorning && dataMorning.value !== null && dataMorning.value !== undefined && dataMorning.value !== '' && !isNaN(dataMorning.value)) {
-                                    sectionHasData = true;
-                                    const userInfo = dataMorning.user || 'Usuario';
-                                    const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    
-                                    // Verificar si está fuera de rango (considerar min O max independientemente)
-                                    const value = parseFloat(dataMorning.value);
-                                    const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
-                                                        (activity.max !== null && activity.max !== undefined && value > activity.max);
-                                    const alertSymbol = isOutOfRange ? '⚠️ ' : '';
-                                    const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
-                                    
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${dataMorning.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
-                                    // Mostrar no realizada solo en día cerrado
-                                    sectionHasData = true;
-                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                }
+                // Si la sección está configurada como "no", no mostrarla
+                if (showInSummary === 'no') {
+                    return;
+                }
+                
+                // Calcular estadísticas de la sección
+                const sectionActivities = activities.filter(a => a.sectionId === section.id);
+                let sectionTotal = 0;
+                let sectionCompleted = 0;
+                
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        sectionTotal += 2;
+                        const dataMorning = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_manana'];
+                        const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_tarde'];
+                        
+                        if (activity.type === 'parametros') {
+                            if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) sectionCompleted++;
+                            if (dataAfternoon && dataAfternoon.value !== null && !isNaN(dataAfternoon.value)) sectionCompleted++;
+                        } else if (activity.type === 'nivel_aceite') {
+                            if (dataMorning && dataMorning.oilLevel) sectionCompleted++;
+                            if (dataAfternoon && dataAfternoon.oilLevel) sectionCompleted++;
+                        } else {
+                            if (dataMorning && dataMorning.status === 'ok') sectionCompleted++;
+                            if (dataAfternoon && dataAfternoon.status === 'ok') sectionCompleted++;
+                        }
+                    } else if (activity.frequency === 'Diario') {
+                        sectionTotal += 1;
+                        const activityData = dailyLogs[dateStr].sections[section.id].activities[activity.id];
+                        
+                        if (activity.type === 'parametros') {
+                            if (activityData && activityData.value !== null && !isNaN(activityData.value)) sectionCompleted++;
+                        } else if (activity.type === 'nivel_aceite') {
+                            if (activityData && activityData.oilLevel) sectionCompleted++;
+                        } else {
+                            if (activityData && activityData.status === 'ok') sectionCompleted++;
+                        }
+                    }
+                });
+                
+                // Si no hay actividades en la sección, no mostrarla
+                if (sectionTotal === 0) return;
+                
+                const sectionPercentage = Math.round((sectionCompleted / sectionTotal) * 100);
+                
+                // MODO RESUMIDO: Solo mostrar porcentaje
+                if (showInSummary === 'resumido') {
+                    reportHTML += '<div class="report-summary">';
+                    reportHTML += '<h3>' + section.icon + ' ' + section.name + '</h3>';
+                    reportHTML += '<p style="font-size: 16px; color: ' + (sectionPercentage === 100 ? '#28a745' : '#667eea') + '; font-weight: bold;">';
+                    reportHTML += sectionCompleted + '/' + sectionTotal + ' (' + sectionPercentage + '%)';
+                    reportHTML += '</p></div>';
+                    return;
+                }
+                
+                // MODO DETALLE: Mostrar porcentaje + actividades
+                let sectionHTML = '';
+                
+                sectionActivities.forEach(activity => {
+                    if (activity.frequency === '2 veces al dia') {
+                        const dataMorning = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_manana'];
+                        const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_tarde'];
+                        
+                        if (activity.type === 'parametros') {
+                            if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) {
+                                const userInfo = dataMorning.user || 'Usuario';
+                                const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                const value = parseFloat(dataMorning.value);
+                                const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
+                                                    (activity.max !== null && activity.max !== undefined && value > activity.max);
+                                const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
                                 
-                                if (dataAfternoon && dataAfternoon.value !== null && dataAfternoon.value !== undefined && dataAfternoon.value !== '' && !isNaN(dataAfternoon.value)) {
-                                    sectionHasData = true;
-                                    const userInfo = dataAfternoon.user || 'Usuario';
-                                    const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                    
-                                    // Verificar si está fuera de rango (considerar min O max independientemente)
-                                    const value = parseFloat(dataAfternoon.value);
-                                    const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
-                                                        (activity.max !== null && activity.max !== undefined && value > activity.max);
-                                    const alertSymbol = isOutOfRange ? '⚠️ ' : '';
-                                    const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
-                                    
-                                    sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${dataAfternoon.value} ${activity.unit || ''} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
-                                    // Mostrar no realizada solo en día cerrado
-                                    sectionHasData = true;
-                                    sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                }
-                            } else if (activity.type === 'chequeo') {
-                                // Verificar si es Nivel de Aceite
-                                if (activity.name.toLowerCase().includes('nivel') && activity.name.toLowerCase().includes('aceite')) {
-                                    // Manejo especial para Nivel de Aceite con 4 niveles
-                                    if (dataMorning && dataMorning.oilLevel) {
-                                        sectionHasData = true;
-                                        const userInfo = dataMorning.user || 'Usuario';
-                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        const oilLevelText = {
-                                            'full': '🟢 Full',
-                                            '3/4': '🟡 3/4',
-                                            '1/2': '🟠 1/2',
-                                            'vacio': '🔴 Vacío'
-                                        }[dataMorning.oilLevel] || dataMorning.oilLevel;
-                                        
-                                        const hasAlert = dataMorning.oilLevel === '1/2' || dataMorning.oilLevel === 'vacio';
-                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                        
-                                        sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Mañana):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                    } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
-                                        sectionHasData = true;
-                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                    
-                                    if (dataAfternoon && dataAfternoon.oilLevel) {
-                                        sectionHasData = true;
-                                        const userInfo = dataAfternoon.user || 'Usuario';
-                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        const oilLevelText = {
-                                            'full': '🟢 Full',
-                                            '3/4': '🟡 3/4',
-                                            '1/2': '🟠 1/2',
-                                            'vacio': '🔴 Vacío'
-                                        }[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
-                                        
-                                        const hasAlert = dataAfternoon.oilLevel === '1/2' || dataAfternoon.oilLevel === 'vacio';
-                                        const alertSymbol = hasAlert ? '⚠️ ' : '';
-                                        const textColor = hasAlert ? 'color: #dc3545; font-weight: bold;' : '';
-                                        
-                                        sectionHTML += `<p style="${textColor}"><strong>${activity.name} (Tarde):</strong> ${alertSymbol}${oilLevelText} ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                    } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
-                                        sectionHasData = true;
-                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                } else {
-                                    // Manejo de chequeos normales (OK/No OK)
-                                    if (dataMorning && dataMorning.status === 'ok') {
-                                        sectionHasData = true;
-                                        const userInfo = dataMorning.user || 'Usuario';
-                                        const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        sectionHTML += `<p><strong>${activity.name} (Mañana):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                    } else if (!isCurrentDay && dataMorning && dataMorning.incomplete) {
-                                        sectionHasData = true;
-                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Mañana):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                    
-                                    if (dataAfternoon && dataAfternoon.status === 'ok') {
-                                        sectionHasData = true;
-                                        const userInfo = dataAfternoon.user || 'Usuario';
-                                        const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
-                                        
-                                        sectionHTML += `<p><strong>${activity.name} (Tarde):</strong> ✓ OK ${timeInfo ? `<small style="color: #999;">(${userInfo} - ${timeInfo})</small>` : ''}</p>`;
-                                    } else if (!isCurrentDay && dataAfternoon && dataAfternoon.incomplete) {
-                                        sectionHasData = true;
-                                        sectionHTML += `<p style="color: #dc3545; font-weight: bold;"><strong>${activity.name} (Tarde):</strong> ⚠️ No realizada</p>`;
-                                    }
-                                }
+                                sectionHTML += '<p style="' + textColor + '"><strong>' + activity.name + ' (Mañana):</strong> ';
+                                sectionHTML += alertSymbol + dataMorning.value + ' ' + (activity.unit || '');
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
+                            }
+                            
+                            if (dataAfternoon && dataAfternoon.value !== null && !isNaN(dataAfternoon.value)) {
+                                const userInfo = dataAfternoon.user || 'Usuario';
+                                const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                const value = parseFloat(dataAfternoon.value);
+                                const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
+                                                    (activity.max !== null && activity.max !== undefined && value > activity.max);
+                                const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                                const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                                
+                                sectionHTML += '<p style="' + textColor + '"><strong>' + activity.name + ' (Tarde):</strong> ';
+                                sectionHTML += alertSymbol + dataAfternoon.value + ' ' + (activity.unit || '');
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
+                            }
+                        } else if (activity.type === 'nivel_aceite') {
+                            if (dataMorning && dataMorning.oilLevel) {
+                                const userInfo = dataMorning.user || 'Usuario';
+                                const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                const oilLevelText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataMorning.oilLevel] || dataMorning.oilLevel;
+                                
+                                sectionHTML += '<p><strong>' + activity.name + ' (Mañana):</strong> ' + oilLevelText;
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
+                            }
+                            
+                            if (dataAfternoon && dataAfternoon.oilLevel) {
+                                const userInfo = dataAfternoon.user || 'Usuario';
+                                const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                const oilLevelText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
+                                
+                                sectionHTML += '<p><strong>' + activity.name + ' (Tarde):</strong> ' + oilLevelText;
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
+                            }
+                        } else {
+                            if (dataMorning && dataMorning.status === 'ok') {
+                                const userInfo = dataMorning.user || 'Usuario';
+                                const timeInfo = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                
+                                sectionHTML += '<p><strong>' + activity.name + ' (Mañana):</strong> ✓ OK';
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
+                            }
+                            
+                            if (dataAfternoon && dataAfternoon.status === 'ok') {
+                                const userInfo = dataAfternoon.user || 'Usuario';
+                                const timeInfo = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                                
+                                sectionHTML += '<p><strong>' + activity.name + ' (Tarde):</strong> ✓ OK';
+                                if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                                sectionHTML += '</p>';
                             }
                         }
-                    });
-                    
-                    // Solo agregar la sección si tiene datos
-                    if (sectionHasData) {
-                        reportHTML += `<div class="report-summary"><h3>${section.icon} ${section.name}</h3>`;
-                        reportHTML += sectionHTML;
-                        reportHTML += `</div>`;
+                    } else if (activity.frequency === 'Diario') {
+                        const activityData = dailyLogs[dateStr].sections[section.id].activities[activity.id];
+                        
+                        if (activity.type === 'parametros' && activityData && activityData.value !== null && !isNaN(activityData.value)) {
+                            const userInfo = activityData.user || 'Usuario';
+                            const timeInfo = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                            const value = parseFloat(activityData.value);
+                            const isOutOfRange = (activity.min !== null && activity.min !== undefined && value < activity.min) || 
+                                                (activity.max !== null && activity.max !== undefined && value > activity.max);
+                            const alertSymbol = isOutOfRange ? '⚠️ ' : '';
+                            const textColor = isOutOfRange ? 'color: #dc3545; font-weight: bold;' : '';
+                            
+                            sectionHTML += '<p style="' + textColor + '"><strong>' + activity.name + ':</strong> ';
+                            sectionHTML += alertSymbol + activityData.value + ' ' + (activity.unit || '');
+                            if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                            sectionHTML += '</p>';
+                        } else if (activity.type === 'nivel_aceite' && activityData && activityData.oilLevel) {
+                            const userInfo = activityData.user || 'Usuario';
+                            const timeInfo = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                            const oilLevelText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[activityData.oilLevel] || activityData.oilLevel;
+                            
+                            sectionHTML += '<p><strong>' + activity.name + ':</strong> ' + oilLevelText;
+                            if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                            sectionHTML += '</p>';
+                        } else if (activity.type === 'chequeo' && activityData && activityData.status === 'ok') {
+                            const userInfo = activityData.user || 'Usuario';
+                            const timeInfo = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
+                            
+                            sectionHTML += '<p><strong>' + activity.name + ':</strong> ✓ OK';
+                            if (timeInfo) sectionHTML += ' <small style="color: #999;">(' + userInfo + ' - ' + timeInfo + ')</small>';
+                            sectionHTML += '</p>';
+                        }
                     }
+                });
+                
+                // Solo agregar la sección si tiene contenido
+                if (sectionHTML) {
+                    reportHTML += '<div class="report-summary">';
+                    reportHTML += '<h3>' + section.icon + ' ' + section.name + '</h3>';
+                    reportHTML += '<p style="font-size: 16px; color: ' + (sectionPercentage === 100 ? '#28a745' : '#667eea') + '; font-weight: bold; margin-bottom: 10px;">';
+                    reportHTML += sectionCompleted + '/' + sectionTotal + ' (' + sectionPercentage + '%)';
+                    reportHTML += '</p>';
+                    reportHTML += sectionHTML;
+                    reportHTML += '</div>';
                 }
             });
+
 
             // Mostrar novedades
             if (dailyLogs[dateStr].novedades && dailyLogs[dateStr].novedades.length > 0) {
