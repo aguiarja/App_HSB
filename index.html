@@ -665,14 +665,6 @@
         <div id="tab-historial" class="tab-content">
             <div class="section-header">
                 <h2>📋 Historial</h2>
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
-                    <label style="font-weight: bold; color: #667eea;">📅 Seleccionar fecha:</label>
-                    <input type="date" id="historialDatePicker" 
-                           style="padding: 8px 12px; border-radius: 5px; border: 2px solid #667eea; font-size: 14px;"
-                           onchange="loadHistorialForDate(this.value)">
-                    <button onclick="loadTodayHistorial()" class="btn btn-secondary btn-small">Hoy</button>
-                    <button onclick="exportHistorialToExcel()" class="btn btn-secondary btn-small">📥 Exportar Excel</button>
-                </div>
             </div>
             <div id="historialContent"></div>
         </div>
@@ -768,68 +760,89 @@
         </div>
     </div>
     
-    <!-- MODAL: EDITAR ACTIVIDAD -->
-    <div id="editActivityModal" class="modal">
+    <!-- MODAL: AGREGAR SECCIÓN -->
+    <div id="addSectionModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3>✏️ Editar Actividad</h3>
-                <span class="close" onclick="closeEditActivityModal()">&times;</span>
+                <h3>➕ Agregar Nueva Sección</h3>
+                <span class="close" onclick="closeAddSectionModal()">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nombre de la actividad:</label>
-                    <input type="text" id="editActivityName" placeholder="Ej: Presión del sistema" 
+                    <label>Nombre de la sección:</label>
+                    <input type="text" id="newSectionName" placeholder="Ej: Compresor MYCOM" 
                            style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
                 </div>
                 
                 <div class="form-group">
-                    <label>Tipo de registro:</label>
-                    <select id="editActivityType" onchange="toggleEditParametrosFields()" 
-                            style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
-                        <option value="parametros">Parámetros (valores numéricos)</option>
-                        <option value="chequeo">Chequeo (OK/No OK)</option>
-                        <option value="nivel_aceite">Nivel de Aceite (4 niveles)</option>
-                    </select>
-                </div>
-                
-                <div id="editParametrosFields" style="display: none;">
-                    <div class="form-group">
-                        <label>Unidad:</label>
-                        <input type="text" id="editActivityUnit" placeholder="Ej: PSI, °C, %, A" 
-                               style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Valor Mínimo:</label>
-                            <input type="number" step="0.1" id="editActivityMin" placeholder="Ej: 50" 
-                                   style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
-                        </div>
-                        
-                        <div class="form-group" style="flex: 1;">
-                            <label>Valor Máximo:</label>
-                            <input type="number" step="0.1" id="editActivityMax" placeholder="Ej: 100" 
-                                   style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
-                        </div>
-                    </div>
+                    <label>Emoji/Ícono:</label>
+                    <input type="text" id="newSectionIcon" value="📦" 
+                           style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
                 </div>
                 
                 <div class="form-group">
-                    <label>Frecuencia:</label>
-                    <select id="editActivityFrequency" style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
-                        <option value="2 veces al dia">2 veces al día</option>
-                        <option value="Diario">Diario</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="mensual">Mensual</option>
-                        <option value="trimestral">Trimestral</option>
+                    <label>Mostrar en Reporte Diario:</label>
+                    <select id="newSectionShowInSummary" style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        <option value="no">No mostrar</option>
+                        <option value="resumido" selected>Resumido (solo % y actividades)</option>
+                        <option value="detalle">Detalle completo (% + valores)</option>
                     </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        <strong>Resumido:</strong> Muestra "Sección: 4/10 (40%)"<br>
+                        <strong>Detalle:</strong> Muestra porcentaje + lista de actividades con valores
+                    </small>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="saveEditedActivity()" class="btn" style="flex: 1; background: #28a745;">
+                    <button onclick="saveNewSection()" class="btn" style="flex: 1; background: #28a745;">
+                        ✓ Crear Sección
+                    </button>
+                    <button onclick="closeAddSectionModal()" class="btn" style="flex: 1; background: #6c757d;">
+                        ✕ Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL: EDITAR SECCIÓN -->
+    <div id="editSectionModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>✏️ Editar Sección</h3>
+                <span class="close" onclick="closeEditSectionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre de la sección:</label>
+                    <input type="text" id="editSectionName" placeholder="Ej: Compresor MYCOM" 
+                           style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Emoji/Ícono:</label>
+                    <input type="text" id="editSectionIcon" 
+                           style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mostrar en Reporte Diario:</label>
+                    <select id="editSectionShowInSummary" style="width: 100%; padding: 10px; border-radius: 5px; border: 2px solid #ddd;">
+                        <option value="no">No mostrar</option>
+                        <option value="resumido">Resumido (solo % y actividades)</option>
+                        <option value="detalle">Detalle completo (% + valores)</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        <strong>Resumido:</strong> Muestra "Sección: 4/10 (40%)"<br>
+                        <strong>Detalle:</strong> Muestra porcentaje + lista de actividades con valores
+                    </small>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="saveEditedSection()" class="btn" style="flex: 1; background: #28a745;">
                         ✓ Guardar Cambios
                     </button>
-                    <button onclick="closeEditActivityModal()" class="btn" style="flex: 1; background: #6c757d;">
+                    <button onclick="closeEditSectionModal()" class="btn" style="flex: 1; background: #6c757d;">
                         ✕ Cancelar
                     </button>
                 </div>
@@ -1402,6 +1415,10 @@
                             if (activityDataAfternoon && activityDataAfternoon.value !== null && activityDataAfternoon.value !== undefined && activityDataAfternoon.value !== '' && !isNaN(activityDataAfternoon.value)) {
                                 completedFields++;
                             }
+                        } else if (activity.type === 'nivel_aceite') {
+                            // Para nivel de aceite, cuenta si tiene oilLevel seleccionado
+                            if (activityDataMorning && activityDataMorning.oilLevel) completedFields++;
+                            if (activityDataAfternoon && activityDataAfternoon.oilLevel) completedFields++;
                         } else {
                             // Para chequeos, solo cuenta si está marcado como OK
                             if (activityDataMorning && activityDataMorning.status === 'ok') completedFields++;
@@ -1416,6 +1433,9 @@
                             if (activityData && activityData.value !== null && activityData.value !== undefined && activityData.value !== '' && !isNaN(activityData.value)) {
                                 completedFields++;
                             }
+                        } else if (activity.type === 'nivel_aceite') {
+                            // Para nivel de aceite, cuenta si tiene oilLevel seleccionado
+                            if (activityData && activityData.oilLevel) completedFields++;
                         } else {
                             // Para chequeos, solo cuenta si está marcado como OK
                             if (activityData && activityData.status === 'ok') completedFields++;
@@ -1572,33 +1592,12 @@
                 const value = activityData.value;
                 // Verificar que tenga valor válido (no null, no undefined, no NaN, no string vacío)
                 const hasValue = value !== null && value !== undefined && value !== '' && !isNaN(value);
-                
-                // Verificar si está fuera de rango (funciona con solo min, solo max, o ambos)
-                let hasAlert = false;
-                if (hasValue) {
-                    const numValue = parseFloat(value);
-                    if (activity.min !== null && activity.min !== undefined && numValue < activity.min) {
-                        hasAlert = true;
-                    }
-                    if (activity.max !== null && activity.max !== undefined && numValue > activity.max) {
-                        hasAlert = true;
-                    }
-                }
+                const hasAlert = hasValue && activity.min && activity.max && (parseFloat(value) < activity.min || parseFloat(value) > activity.max);
                 
                 // Campo VERDE si tiene valor (incluso fuera de rango), NARANJA si está vacío
                 let fieldClass = hasValue ? 'completed' : 'pending';
                 
                 fieldDiv.className = `activity-field ${fieldClass}`;
-                
-                // Generar texto del rango
-                let rangeText = '';
-                if (activity.min !== null && activity.min !== undefined && activity.max !== null && activity.max !== undefined) {
-                    rangeText = `Rango normal: ${activity.min} - ${activity.max} ${activity.unit || ''}`;
-                } else if (activity.min !== null && activity.min !== undefined) {
-                    rangeText = `Mínimo: ${activity.min} ${activity.unit || ''}`;
-                } else if (activity.max !== null && activity.max !== undefined) {
-                    rangeText = `Máximo: ${activity.max} ${activity.unit || ''}`;
-                }
                 
                 fieldDiv.innerHTML = `
                     <label>${activity.name}${turnoLabel} ${activity.unit ? `(${activity.unit})` : ''}:</label>
@@ -1607,11 +1606,11 @@
                            class="${hasValue ? 'completed' : 'pending'}"
                            onchange="updateActivityValue(${activity.id}, '${turno || ''}', this.value)"
                            onkeypress="handleEnterKey(event, 'activity_${activityKey}')">
-                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango</div>` : ''}
-                    ${rangeText ? `<small style="color: #666;">${rangeText}</small>` : ''}
+                    ${hasAlert ? `<div class="alert-message">⚠️ Fuera de rango (${activity.min} - ${activity.max} ${activity.unit})</div>` : ''}
+                    ${activity.min && activity.max ? `<small style="color: #666;">Rango normal: ${activity.min} - ${activity.max} ${activity.unit}</small>` : ''}
                 `;
             } else if (activity.type === 'nivel_aceite') {
-                // Tipo 'nivel_aceite' - Selector de 4 niveles
+                // Campo especial para Nivel de Aceite con 4 niveles
                 const oilLevel = activityData.oilLevel || '';
                 const isCompleted = oilLevel !== '';
                 const hasAlert = oilLevel === '1/2' || oilLevel === 'vacio';
@@ -1640,28 +1639,28 @@
                     </div>
                 `;
             } else {
-                    // Chequeo normal (✓ OK)
-                    const status = activityData.status || '';
-                    const isCompleted = status === 'ok';
-                    
-                    fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
-                    
-                    fieldDiv.innerHTML = `
-                        <label>${activity.name}${turnoLabel}:</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="activity_${activityKey}_ok" 
-                                   ${status === 'ok' ? 'checked' : ''}
-                                   onchange="updateActivityStatus(${activity.id}, '${turno || ''}', 'ok', this.checked)">
-                            <label for="activity_${activityKey}_ok">✓ OK</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Observaciones:</label>
-                            <input type="text" id="activity_${activityKey}_obs" 
-                                   value="${activityData.observations || ''}"
-                                   placeholder="Opcional"
-                                   onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
-                        </div>
-                    `;
+                // Chequeo normal (✓ OK)
+                const status = activityData.status || '';
+                const isCompleted = status === 'ok';
+                
+                fieldDiv.className = `activity-field ${isCompleted ? 'completed' : 'pending'}`;
+                
+                fieldDiv.innerHTML = `
+                    <label>${activity.name}${turnoLabel}:</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="activity_${activityKey}_ok" 
+                               ${status === 'ok' ? 'checked' : ''}
+                               onchange="updateActivityStatus(${activity.id}, '${turno || ''}', 'ok', this.checked)">
+                        <label for="activity_${activityKey}_ok">✓ OK</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones:</label>
+                        <input type="text" id="activity_${activityKey}_obs" 
+                               value="${activityData.observations || ''}"
+                               placeholder="Opcional"
+                               onchange="updateActivityObservations(${activity.id}, '${turno || ''}', this.value)">
+                    </div>
+                `;
             }
             
             container.appendChild(fieldDiv);
@@ -1682,18 +1681,11 @@
             // Actualizar alerta inmediatamente en el DOM
             const selectElement = document.getElementById(`activity_${activityKey}_oil`);
             if (selectElement) {
-                const fieldDiv = selectElement.closest('.activity-field');
+                const parentDiv = selectElement.parentElement;
                 const hasAlert = level === '1/2' || level === 'vacio';
                 
-                // Actualizar clase del fieldDiv (para el color de fondo)
-                if (level) {
-                    fieldDiv.className = 'activity-field completed';
-                } else {
-                    fieldDiv.className = 'activity-field pending';
-                }
-                
                 // Buscar si ya existe un div de alerta
-                let alertDiv = fieldDiv.querySelector('.alert-message');
+                let alertDiv = parentDiv.querySelector('.alert-message');
                 
                 if (hasAlert) {
                     // Si debe haber alerta y no existe, crearla
@@ -2343,373 +2335,9 @@
         }
 
         function shareReport() {
-            if (!dailyLogs[currentDate]) {
-                alert('No hay datos para compartir');
-                return;
-            }
-            
-            const dateObj = new Date(currentDate + 'T00:00:00');
-            const formattedDate = dateObj.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            let totalActivities = 0;
-            let completedActivities = 0;
-            let message = `*📊 REPORTE DIARIO HSB*\n📅 ${formattedDate}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-            
-            sections.forEach(section => {
-                if (!dailyLogs[currentDate].sections[section.id]) return;
-                
-                const sectionActivities = activities.filter(a => a.sectionId === section.id);
-                let sectionTotal = 0;
-                let sectionCompleted = 0;
-                let sectionDetails = '';
-                
-                sectionActivities.forEach(activity => {
-                    if (activity.frequency === '2 veces al dia') {
-                        sectionTotal += 2;
-                        const dataMorning = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_manana'];
-                        const dataAfternoon = dailyLogs[currentDate].sections[section.id].activities[activity.id + '_tarde'];
-                        
-                        if (activity.type === 'parametros') {
-                            if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Mañana): ${dataMorning.value} ${activity.unit || ''}\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.value !== null && !isNaN(dataAfternoon.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Tarde): ${dataAfternoon.value} ${activity.unit || ''}\n`;
-                            }
-                        } else if (activity.type === 'nivel_aceite') {
-                            if (dataMorning && dataMorning.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataMorning.oilLevel] || dataMorning.oilLevel;
-                                sectionDetails += `  • ${activity.name} (Mañana): ${oilText}\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
-                                sectionDetails += `  • ${activity.name} (Tarde): ${oilText}\n`;
-                            }
-                        } else {
-                            if (dataMorning && dataMorning.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Mañana): ✓ OK\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Tarde): ✓ OK\n`;
-                            }
-                        }
-                    } else if (activity.frequency === 'Diario') {
-                        sectionTotal += 1;
-                        const activityData = dailyLogs[currentDate].sections[section.id].activities[activity.id];
-                        
-                        if (activity.type === 'parametros') {
-                            if (activityData && activityData.value !== null && !isNaN(activityData.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name}: ${activityData.value} ${activity.unit || ''}\n`;
-                            }
-                        } else if (activity.type === 'nivel_aceite') {
-                            if (activityData && activityData.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[activityData.oilLevel] || activityData.oilLevel;
-                                sectionDetails += `  • ${activity.name}: ${oilText}\n`;
-                            }
-                        } else {
-                            if (activityData && activityData.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name}: ✓ OK\n`;
-                            }
-                        }
-                    }
-                });
-                
-                if (sectionTotal > 0) {
-                    totalActivities += sectionTotal;
-                    completedActivities += sectionCompleted;
-                    const percentage = Math.round((sectionCompleted / sectionTotal) * 100);
-                    message += `*${section.icon} ${section.name}*\nProgreso: ${sectionCompleted}/${sectionTotal} (${percentage}%)\n`;
-                    if (sectionDetails) message += sectionDetails;
-                    message += `\n`;
-                }
-            });
-            
-            const totalPercentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
-            message += `━━━━━━━━━━━━━━━━━━━━\n*📈 RESUMEN TOTAL*\n✓ Completadas: ${completedActivities}/${totalActivities}\n📊 Progreso: ${totalPercentage}%\n\n_Generado por HSB App_`;
-            
+            const message = `Reporte HSB - ${new Date(currentDate).toLocaleDateString('es-ES')}`;
             const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
-        }
-        
-        function shareReportByDate(dateStr) {
-            if (!dailyLogs[dateStr]) {
-                alert('No hay datos para compartir');
-                return;
-            }
-            
-            const dateObj = new Date(dateStr + 'T00:00:00');
-            const formattedDate = dateObj.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            let totalActivities = 0;
-            let completedActivities = 0;
-            let message = `*📊 REPORTE DIARIO HSB*\n📅 ${formattedDate}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-            
-            sections.forEach(section => {
-                if (!dailyLogs[dateStr].sections[section.id]) return;
-                
-                const sectionActivities = activities.filter(a => a.sectionId === section.id);
-                let sectionTotal = 0;
-                let sectionCompleted = 0;
-                let sectionDetails = '';
-                
-                sectionActivities.forEach(activity => {
-                    if (activity.frequency === '2 veces al dia') {
-                        sectionTotal += 2;
-                        const dataMorning = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_manana'];
-                        const dataAfternoon = dailyLogs[dateStr].sections[section.id].activities[activity.id + '_tarde'];
-                        
-                        if (activity.type === 'parametros') {
-                            if (dataMorning && dataMorning.value !== null && !isNaN(dataMorning.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Mañana): ${dataMorning.value} ${activity.unit || ''}\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.value !== null && !isNaN(dataAfternoon.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Tarde): ${dataAfternoon.value} ${activity.unit || ''}\n`;
-                            }
-                        } else if (activity.type === 'nivel_aceite') {
-                            if (dataMorning && dataMorning.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataMorning.oilLevel] || dataMorning.oilLevel;
-                                sectionDetails += `  • ${activity.name} (Mañana): ${oilText}\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[dataAfternoon.oilLevel] || dataAfternoon.oilLevel;
-                                sectionDetails += `  • ${activity.name} (Tarde): ${oilText}\n`;
-                            }
-                        } else {
-                            if (dataMorning && dataMorning.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Mañana): ✓ OK\n`;
-                            }
-                            if (dataAfternoon && dataAfternoon.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name} (Tarde): ✓ OK\n`;
-                            }
-                        }
-                    } else if (activity.frequency === 'Diario') {
-                        sectionTotal += 1;
-                        const activityData = dailyLogs[dateStr].sections[section.id].activities[activity.id];
-                        
-                        if (activity.type === 'parametros') {
-                            if (activityData && activityData.value !== null && !isNaN(activityData.value)) {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name}: ${activityData.value} ${activity.unit || ''}\n`;
-                            }
-                        } else if (activity.type === 'nivel_aceite') {
-                            if (activityData && activityData.oilLevel) {
-                                sectionCompleted++;
-                                const oilText = {'full': '🟢 Full', '3/4': '🟡 3/4', '1/2': '🟠 1/2', 'vacio': '🔴 Vacío'}[activityData.oilLevel] || activityData.oilLevel;
-                                sectionDetails += `  • ${activity.name}: ${oilText}\n`;
-                            }
-                        } else {
-                            if (activityData && activityData.status === 'ok') {
-                                sectionCompleted++;
-                                sectionDetails += `  • ${activity.name}: ✓ OK\n`;
-                            }
-                        }
-                    }
-                });
-                
-                if (sectionTotal > 0) {
-                    totalActivities += sectionTotal;
-                    completedActivities += sectionCompleted;
-                    const percentage = Math.round((sectionCompleted / sectionTotal) * 100);
-                    message += `*${section.icon} ${section.name}*\nProgreso: ${sectionCompleted}/${sectionTotal} (${percentage}%)\n`;
-                    if (sectionDetails) message += sectionDetails;
-                    message += `\n`;
-                }
-            });
-            
-            const totalPercentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
-            message += `━━━━━━━━━━━━━━━━━━━━\n*📈 RESUMEN TOTAL*\n✓ Completadas: ${completedActivities}/${totalActivities}\n📊 Progreso: ${totalPercentage}%\n\n_Generado por HSB App_`;
-            
-            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-        }
-        
-        function exportHistorialToExcel() {
-            // Verificar si hay una fecha seleccionada en el calendario
-            const selectedDate = document.getElementById('historialDatePicker').value;
-            
-            if (selectedDate) {
-                // Exportar solo la fecha seleccionada
-                if (!dailyLogs[selectedDate]) {
-                    alert('No hay datos para la fecha seleccionada');
-                    return;
-                }
-                
-                const dateObj = new Date(selectedDate + 'T00:00:00');
-                const formattedDate = dateObj.toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                
-                let csvContent = '\uFEFF';
-                csvContent += `REPORTE HSB - ${formattedDate}\n\n`;
-                csvContent += 'Fecha,Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
-                
-                sections.forEach(section => {
-                    if (!dailyLogs[selectedDate].sections[section.id]) return;
-                    
-                    const sectionActivities = activities.filter(a => a.sectionId === section.id);
-                    
-                    sectionActivities.forEach(activity => {
-                        if (activity.frequency === '2 veces al dia') {
-                            const dataMorning = dailyLogs[selectedDate].sections[section.id].activities[activity.id + '_manana'];
-                            if (dataMorning) {
-                                const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
-                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                const status = activity.type === 'chequeo' && dataMorning.status ? 'OK' : '';
-                                const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
-                                const user = dataMorning.user || '';
-                                const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
-                                const obs = (dataMorning.observations || '').replace(/,/g, ';');
-                                
-                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                            }
-                            
-                            const dataAfternoon = dailyLogs[selectedDate].sections[section.id].activities[activity.id + '_tarde'];
-                            if (dataAfternoon) {
-                                const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
-                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                const status = activity.type === 'chequeo' && dataAfternoon.status ? 'OK' : '';
-                                const oilLevel = activity.type === 'nivel_aceite' && dataAfternoon.oilLevel ? dataAfternoon.oilLevel : '';
-                                const user = dataAfternoon.user || '';
-                                const time = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES') : '';
-                                const obs = (dataAfternoon.observations || '').replace(/,/g, ';');
-                                
-                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Tarde","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                            }
-                        } else if (activity.frequency === 'Diario') {
-                            const activityData = dailyLogs[selectedDate].sections[section.id].activities[activity.id];
-                            if (activityData) {
-                                const value = activity.type === 'parametros' && activityData.value !== null ? activityData.value : '';
-                                const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                const status = activity.type === 'chequeo' && activityData.status ? 'OK' : '';
-                                const oilLevel = activity.type === 'nivel_aceite' && activityData.oilLevel ? activityData.oilLevel : '';
-                                const user = activityData.user || '';
-                                const time = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES') : '';
-                                const obs = (activityData.observations || '').replace(/,/g, ';');
-                                
-                                csvContent += `"${selectedDate}","${section.name}","${activity.name}","Diario","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                            }
-                        }
-                    });
-                });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute('href', url);
-                link.setAttribute('download', `Reporte_HSB_${selectedDate}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showSyncIndicator('✓ Excel exportado', 'synced');
-            } else {
-                // Exportar todo el historial
-                const dates = Object.keys(dailyLogs).sort();
-                
-                if (dates.length === 0) {
-                    alert('No hay datos en el historial para exportar');
-                    return;
-                }
-                
-                let csvContent = '\uFEFF';
-                csvContent += `HISTORIAL COMPLETO HSB\n\n`;
-                csvContent += 'Fecha,Sección,Actividad,Turno,Valor,Unidad,Estado,Nivel Aceite,Usuario,Hora,Observaciones\n';
-                
-                dates.forEach(date => {
-                    sections.forEach(section => {
-                        if (!dailyLogs[date].sections[section.id]) return;
-                        
-                        const sectionActivities = activities.filter(a => a.sectionId === section.id);
-                        
-                        sectionActivities.forEach(activity => {
-                            if (activity.frequency === '2 veces al dia') {
-                                const dataMorning = dailyLogs[date].sections[section.id].activities[activity.id + '_manana'];
-                                if (dataMorning) {
-                                    const value = activity.type === 'parametros' && dataMorning.value !== null ? dataMorning.value : '';
-                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                    const status = activity.type === 'chequeo' && dataMorning.status ? 'OK' : '';
-                                    const oilLevel = activity.type === 'nivel_aceite' && dataMorning.oilLevel ? dataMorning.oilLevel : '';
-                                    const user = dataMorning.user || '';
-                                    const time = dataMorning.timestamp ? new Date(dataMorning.timestamp).toLocaleTimeString('es-ES') : '';
-                                    const obs = (dataMorning.observations || '').replace(/,/g, ';');
-                                    
-                                    csvContent += `"${date}","${section.name}","${activity.name}","Mañana","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                                }
-                                
-                                const dataAfternoon = dailyLogs[date].sections[section.id].activities[activity.id + '_tarde'];
-                                if (dataAfternoon) {
-                                    const value = activity.type === 'parametros' && dataAfternoon.value !== null ? dataAfternoon.value : '';
-                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                    const status = activity.type === 'chequeo' && dataAfternoon.status ? 'OK' : '';
-                                    const oilLevel = activity.type === 'nivel_aceite' && dataAfternoon.oilLevel ? dataAfternoon.oilLevel : '';
-                                    const user = dataAfternoon.user || '';
-                                    const time = dataAfternoon.timestamp ? new Date(dataAfternoon.timestamp).toLocaleTimeString('es-ES') : '';
-                                    const obs = (dataAfternoon.observations || '').replace(/,/g, ';');
-                                    
-                                    csvContent += `"${date}","${section.name}","${activity.name}","Tarde","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                                }
-                            } else if (activity.frequency === 'Diario') {
-                                const activityData = dailyLogs[date].sections[section.id].activities[activity.id];
-                                if (activityData) {
-                                    const value = activity.type === 'parametros' && activityData.value !== null ? activityData.value : '';
-                                    const unit = activity.type === 'parametros' ? (activity.unit || '') : '';
-                                    const status = activity.type === 'chequeo' && activityData.status ? 'OK' : '';
-                                    const oilLevel = activity.type === 'nivel_aceite' && activityData.oilLevel ? activityData.oilLevel : '';
-                                    const user = activityData.user || '';
-                                    const time = activityData.timestamp ? new Date(activityData.timestamp).toLocaleTimeString('es-ES') : '';
-                                    const obs = (activityData.observations || '').replace(/,/g, ';');
-                                    
-                                    csvContent += `"${date}","${section.name}","${activity.name}","Diario","${value}","${unit}","${status}","${oilLevel}","${user}","${time}","${obs}"\n`;
-                                }
-                            }
-                        });
-                    });
-                });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                
-                const firstDate = dates[0];
-                const lastDate = dates[dates.length - 1];
-                link.setAttribute('href', url);
-                link.setAttribute('download', `Historial_HSB_${firstDate}_a_${lastDate}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showSyncIndicator('✓ Historial completo exportado', 'synced');
-            }
         }
 
         // ==================== PLAN ====================
@@ -2846,22 +2474,17 @@
                 const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
                 html += `
-                    <div class="report-summary" style="margin-bottom: 15px; transition: all 0.3s;" 
+                    <div class="report-summary" style="margin-bottom: 15px; cursor: pointer; transition: all 0.3s;" 
+                         onclick="toggleHistorialDetail('${date}')"
                          onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
                          onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="flex: 1; cursor: pointer;" onclick="toggleHistorialDetail('${date}')">
-                                <h3 style="color: #1e3c72;">📅 ${new Date(date + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
+                            <div>
+                                <h3 style="color: #1e3c72;">📅 ${new Date(date).toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
                                 <p style="margin-top: 5px; color: #666;">Completado: ${percentage}% (${completed}/${total})</p>
                             </div>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <button onclick="event.stopPropagation(); shareReportByDate('${date}')" 
-                                        class="btn btn-secondary btn-small" 
-                                        style="font-size: 12px; padding: 8px 12px;">
-                                    📱 WhatsApp
-                                </button>
-                                <span id="arrow_${date}" style="font-size: 24px; color: #667eea; cursor: pointer;" 
-                                      onclick="toggleHistorialDetail('${date}')">▶</span>
+                            <div style="font-size: 24px; color: #667eea;">
+                                <span id="arrow_${date}">▶</span>
                             </div>
                         </div>
                         <div id="detail_${date}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #eee;">
@@ -3024,35 +2647,6 @@
             }
         }
 
-        // ==================== CALENDARIO BUSCADOR ====================
-        
-        function loadHistorialForDate(dateStr) {
-            if (!dateStr) {
-                alert('Por favor selecciona una fecha');
-                return;
-            }
-            
-            const container = document.getElementById('historialContent');
-            
-            if (!dailyLogs[dateStr]) {
-                container.innerHTML = `
-                    <div class="report-summary">
-                        <h3 style="color: #dc3545;">📅 No hay datos para ${new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h3>
-                        <p style="color: #666; margin-top: 10px;">Esta fecha no tiene registros en el sistema.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = renderDayReport(dateStr, false);
-        }
-        
-        function loadTodayHistorial() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('historialDatePicker').value = today;
-            loadHistorialForDate(today);
-        }
-
         // ==================== CONFIGURACIÓN ====================
         
         function renderConfiguracion() {
@@ -3193,6 +2787,12 @@
                                                font-size: 12px; margin-right: 5px;">
                                     ↓
                                 </button>
+                                <button onclick="editSection(${section.id})" 
+                                        style="background: #ffc107; color: #000; border: none; 
+                                               padding: 6px 12px; border-radius: 5px; cursor: pointer; 
+                                               font-size: 12px; margin-right: 5px;">
+                                    ✏️
+                                </button>
                                 <button onclick="deleteSection(${section.id})" 
                                         style="background: #dc3545; color: white; border: none; 
                                                padding: 6px 12px; border-radius: 5px; cursor: pointer; 
@@ -3217,23 +2817,44 @@
             container.innerHTML = html;
         }
         
-        async function promptAddSection() {
-            const name = prompt('Nombre de la nueva sección:');
-            if (!name || !name.trim()) return;
+        function promptAddSection() {
+            // Abrir modal en lugar de prompts
+            document.getElementById('newSectionName').value = '';
+            document.getElementById('newSectionIcon').value = '📦';
+            document.getElementById('newSectionShowInSummary').value = 'resumido';
+            document.getElementById('addSectionModal').style.display = 'flex';
+        }
+        
+        function closeAddSectionModal() {
+            document.getElementById('addSectionModal').style.display = 'none';
+        }
+        
+        async function saveNewSection() {
+            const name = document.getElementById('newSectionName').value.trim();
+            const icon = document.getElementById('newSectionIcon').value.trim();
+            const showInSummary = document.getElementById('newSectionShowInSummary').value;
             
-            const icon = prompt('Emoji/ícono para la sección:', '📦');
-            if (!icon) return;
+            if (!name) {
+                alert('El nombre es obligatorio');
+                return;
+            }
+            
+            if (!icon) {
+                alert('El ícono es obligatorio');
+                return;
+            }
             
             const newId = Math.max(...sections.map(s => s.id), 0) + 1;
             const newOrder = Math.max(...sections.map(s => s.order), 0) + 1;
             
-            console.log(`➕ Creando nueva sección: ${name} (id:${newId}, order:${newOrder})`);
+            console.log(`➕ Creando nueva sección: ${name} (id:${newId}, order:${newOrder}, showInSummary:${showInSummary})`);
             
             const newSection = {
                 id: newId,
-                name: name.trim(),
-                icon: icon.trim(),
-                order: newOrder
+                name: name,
+                icon: icon,
+                order: newOrder,
+                showInSummary: showInSummary
             };
             
             sections.push(newSection);
@@ -3268,8 +2889,66 @@
             console.log('✅ Datos recargados desde Firebase');
             
             showSyncIndicator('✓ Sección agregada', 'synced');
+            closeAddSectionModal();
             renderConfiguracion();
             renderSections(); // Re-renderizar para mostrar la nueva sección
+        }
+        
+        let currentEditSectionId = null;
+        
+        function editSection(sectionId) {
+            const section = sections.find(s => s.id === sectionId);
+            if (!section) return;
+            
+            currentEditSectionId = sectionId;
+            
+            // Cargar datos de la sección en el modal
+            document.getElementById('editSectionName').value = section.name;
+            document.getElementById('editSectionIcon').value = section.icon;
+            document.getElementById('editSectionShowInSummary').value = section.showInSummary || 'resumido';
+            
+            // Abrir modal
+            document.getElementById('editSectionModal').style.display = 'flex';
+        }
+        
+        function closeEditSectionModal() {
+            document.getElementById('editSectionModal').style.display = 'none';
+            currentEditSectionId = null;
+        }
+        
+        async function saveEditedSection() {
+            if (!currentEditSectionId) return;
+            
+            const section = sections.find(s => s.id === currentEditSectionId);
+            if (!section) return;
+            
+            const name = document.getElementById('editSectionName').value.trim();
+            const icon = document.getElementById('editSectionIcon').value.trim();
+            const showInSummary = document.getElementById('editSectionShowInSummary').value;
+            
+            if (!name) {
+                alert('El nombre es obligatorio');
+                return;
+            }
+            
+            if (!icon) {
+                alert('El ícono es obligatorio');
+                return;
+            }
+            
+            // Actualizar la sección
+            section.name = name;
+            section.icon = icon;
+            section.showInSummary = showInSummary;
+            
+            // Guardar en Firebase
+            await sectionsRef.set(sections);
+            console.log('✅ Sección actualizada en Firebase');
+            
+            showSyncIndicator('✓ Sección actualizada', 'synced');
+            closeEditSectionModal();
+            renderConfiguracion();
+            renderSections(); // Re-renderizar para mostrar los cambios
         }
         
         async function deleteSection(id) {
@@ -3677,81 +3356,30 @@
             renderConfiguracion();
         }
         
-        let currentEditActivityId = null;
-        
-        function editActivity(activityId) {
+        async function editActivity(activityId) {
             const activity = activities.find(a => a.id === activityId);
             if (!activity) return;
             
-            currentEditActivityId = activityId;
+            // Editar nombre
+            const newName = prompt('Nombre de la actividad:', activity.name);
+            if (!newName || newName.trim() === '') return;
             
-            document.getElementById('editActivityName').value = activity.name;
-            document.getElementById('editActivityType').value = activity.type;
-            document.getElementById('editActivityFrequency').value = activity.frequency;
+            activity.name = newName.trim();
             
-            toggleEditParametrosFields();
-            
+            // Si es parámetros, permitir editar rango
             if (activity.type === 'parametros') {
-                document.getElementById('editActivityUnit').value = activity.unit || '';
-                document.getElementById('editActivityMin').value = activity.min !== null && activity.min !== undefined ? activity.min : '';
-                document.getElementById('editActivityMax').value = activity.max !== null && activity.max !== undefined ? activity.max : '';
-            }
-            
-            document.getElementById('editActivityModal').style.display = 'flex';
-        }
-        
-        function toggleEditParametrosFields() {
-            const type = document.getElementById('editActivityType').value;
-            const parametrosFields = document.getElementById('editParametrosFields');
-            parametrosFields.style.display = type === 'parametros' ? 'block' : 'none';
-        }
-        
-        function closeEditActivityModal() {
-            document.getElementById('editActivityModal').style.display = 'none';
-            currentEditActivityId = null;
-        }
-        
-        async function saveEditedActivity() {
-            if (!currentEditActivityId) return;
-            
-            const activity = activities.find(a => a.id === currentEditActivityId);
-            if (!activity) return;
-            
-            const name = document.getElementById('editActivityName').value.trim();
-            const type = document.getElementById('editActivityType').value;
-            const frequency = document.getElementById('editActivityFrequency').value;
-            
-            if (!name) {
-                alert('El nombre es obligatorio');
-                return;
-            }
-            
-            activity.name = name;
-            activity.type = type;
-            activity.frequency = frequency;
-            
-            if (type === 'parametros') {
-                const unit = document.getElementById('editActivityUnit').value.trim();
-                const min = document.getElementById('editActivityMin').value;
-                const max = document.getElementById('editActivityMax').value;
+                const newUnit = prompt('Unidad:', activity.unit || '');
+                const newMin = prompt('Valor mínimo:', activity.min !== null && activity.min !== undefined ? activity.min : '');
+                const newMax = prompt('Valor máximo:', activity.max !== null && activity.max !== undefined ? activity.max : '');
                 
-                activity.unit = unit || '';
-                activity.min = min !== '' ? parseFloat(min) : null;
-                activity.max = max !== '' ? parseFloat(max) : null;
-            } else {
-                activity.unit = '';
-                activity.min = null;
-                activity.max = null;
+                activity.unit = newUnit ? newUnit.trim() : '';
+                activity.min = newMin !== '' ? parseFloat(newMin) : null;
+                activity.max = newMax !== '' ? parseFloat(newMax) : null;
             }
             
             await activitiesRef.set(activities);
             showSyncIndicator('✓ Actividad editada', 'synced');
-            closeEditActivityModal();
             renderConfiguracion();
-            
-            if (currentSectionId) {
-                showSectionDetail(currentSectionId);
-            }
         }
 
         // ==================== INITIALIZE APP ====================
