@@ -1186,14 +1186,14 @@
                     sectionActivities.forEach(activity => {
                         if (activity.frequency === '2 veces al dia') {
                             newLog.sections[section.id].activities[`${activity.id}_manana`] = {
-                                value: null, status: null, observations: '', photos: [], user: null, timestamp: null
+                                value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
                             };
                             newLog.sections[section.id].activities[`${activity.id}_tarde`] = {
-                                value: null, status: null, observations: '', photos: [], user: null, timestamp: null
+                                value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
                             };
                         } else if (activity.frequency === 'Diario') {
                             newLog.sections[section.id].activities[activity.id] = {
-                                value: null, status: null, observations: '', photos: [], user: null, timestamp: null
+                                value: null, status: null, oilLevel: null, observations: '', photos: [], user: null, timestamp: null
                             };
                         }
                     });
@@ -1244,6 +1244,12 @@
             sortedSections.forEach(s => console.log(`  - ${s.order}: ${s.name}`));
 
             sortedSections.forEach(section => {
+                // Verificar que la sección existe en el dailyLog
+                if (!dailyLogs[currentDate].sections[section.id]) {
+                    console.warn(`⚠️ Sección ${section.name} (id:${section.id}) no existe en dailyLog. Skipping.`);
+                    return; // Skip esta sección
+                }
+                
                 let totalFields = 0;
                 let completedFields = 0;
 
@@ -1851,6 +1857,12 @@
 
             // Calcular estadísticas
             sections.forEach(section => {
+                // Verificar que la sección existe en el dailyLog
+                if (!dailyLogs[dateStr].sections[section.id]) {
+                    console.warn(`Sección ${section.name} (id:${section.id}) no existe en el log de ${dateStr}`);
+                    return; // Skip esta sección
+                }
+                
                 const sectionActivities = activities.filter(a => a.sectionId === section.id);
                 
                 sectionActivities.forEach(activity => {
@@ -1913,6 +1925,11 @@
 
             // Mostrar detalles por sección
             sections.forEach(section => {
+                // Verificar que la sección existe en el dailyLog
+                if (!dailyLogs[dateStr].sections[section.id]) {
+                    return; // Skip esta sección
+                }
+                
                 const sectionActivities = activities.filter(a => a.sectionId === section.id && (a.showInSummary === 'detalle' || a.showInSummary === 'estado'));
                 
                 if (sectionActivities.length > 0) {
@@ -3251,7 +3268,7 @@
                 day: 'numeric'
             });
             
-            // Obtener día operacional (para verificar lógica 12:05 PM)
+            // Obtener día operacional
             const operationalDate = getOperationalDate();
             const operationalDateFormatted = new Date(operationalDate + 'T00:00:00').toLocaleDateString('es-ES', {
                 year: 'numeric',
@@ -3264,16 +3281,30 @@
             const clockDate = document.getElementById('clockDate');
             const clockDay = document.getElementById('clockDay');
             
-            if (clockTime) clockTime.textContent = timeString;
-            if (clockDate) clockDate.textContent = dateString;
+            if (clockTime) {
+                clockTime.textContent = timeString;
+            } else {
+                console.error('❌ clockTime element not found!');
+            }
+            
+            if (clockDate) {
+                clockDate.textContent = dateString;
+            } else {
+                console.error('❌ clockDate element not found!');
+            }
+            
             if (clockDay) {
                 clockDay.textContent = `Día operacional: ${operationalDateFormatted}`;
+            } else {
+                console.error('❌ clockDay element not found!');
             }
         }
         
         function startSystemClock() {
+            console.log('⏰ Iniciando reloj del sistema...');
             updateSystemClock(); // Actualizar inmediatamente
             setInterval(updateSystemClock, 1000); // Actualizar cada segundo
+            console.log('✅ Reloj iniciado');
         }
     </script>
 
